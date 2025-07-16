@@ -5,38 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from time import sleep
 from typing import List, Dict
-from groq import Groq
+from utility.LLM import LLMClient
 
-# === YOUR EXISTING CLIENT ===
-class LLMClient:
-    def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = model
-
-    def run_chat(self, system_message: str, user_message: str) -> str:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message}
-            ]
-        )
-        return response.choices[0].message.content.strip()
-
-    def run_json(self, system_message: str, user_message: str) -> Dict:
-        output = self.run_chat(system_message, user_message)
-        print(f"\nRaw output:\n{output}\n")
-
-        json_blocks = re.findall(r'```json\s*(\{.*?\})\s*```', output, re.DOTALL)
-        if not json_blocks:
-            json_blocks = re.findall(r'(\{.*\})', output, re.DOTALL)
-
-        if not json_blocks:
-            raise ValueError("No valid JSON block found in LLM response.")
-
-        return json.loads(json_blocks[-1])
-
-# === SCRAPER ===
 def get_clean_text_from_url(url: str) -> str:
     try:
         response = requests.get(url, timeout=15)
@@ -88,6 +58,16 @@ if __name__ == "__main__":
         "https://cleartax.in/s/support-international-patent-protection-electronics-information-technology-sip-eit",
         "https://ism.gov.in/",
         "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-manufacturing-clusters-emc-scheme-kTO5EjMtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-electronics-manufacturing-clusters-emc-2-0-scheme-wNyEDOtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-hardware-schemes-AN1MDOtQWa",
+        "https://clcss.dcmsme.gov.in/",
+        "https://msme.gov.in/schemes/schemes-national-small-industries-corporation",
+        "https://riscvindia.org/#:~:text=RISC%2DV%20is%20an%20open,compared%20to%20closed%2Dsource%20alternatives",
+        "https://wordpress.missionstartupkarnataka.org/wp-content/uploads/2021/07/Special-Incentives-Scheme-for-ESDM-OPG-Approval.pdf",
+        "https://eitbt.karnataka.gov.in/startup/public/policy/en",
+        "http://www.kitven.in/funds/karsemven-fund",
+        "https://itbtst.karnataka.gov.in/storage/pdf-files/EoI%20for%20Anchor%20Units%20FOR%20emc2ENG.pdf",
+        "https://www.coe-iot.com/"
     ]
 
     llm = LLMClient()
