@@ -3,16 +3,24 @@ model.py - This module defines the data model for the router configuration.
 '''
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, Union    
+
+class Location(BaseModel):
+    raw: str
+    city: Optional[str]
+    state: Optional[str]
+    country: Optional[str]
 
 class UserProfile(BaseModel):
-    user_type: str #e.g., "woman-entrepreneur", "student"
-    location: str
+    user_type: str  # e.g., "woman-entrepreneur", "student"
+    location: Location
+
 
 class Metadata(BaseModel):
+    query: str
     intents: List[str]
     tools_required: List[str]
-    entities: Dict[str, str]  # e.g., {"scheme": "PMEGP"}
+    entities: Dict[str, Union[str, List[str]]]
     user_profile: Optional[UserProfile]
 
 class ToolTask(BaseModel):
