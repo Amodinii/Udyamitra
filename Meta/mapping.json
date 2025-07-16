@@ -1,0 +1,5 @@
+{
+    "SchemeExplainer": ["explain", "understand", "describe", "list_benefits"],
+    "EligibilityChecker": ["check_eligibility", "verify_eligibility", "am_i_eligible", "who_can_apply"],
+    "SchemeRegistrar": ["register", "apply", "enroll", "how_to_apply", "application_process"]
+}
