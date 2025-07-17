@@ -6,6 +6,10 @@ from groq import Groq
 
 class LLMClient:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
+        if os.getenv("GROQ_API_KEY"):
+            print("Groq API key is there")
+        else:
+            print("Cant find Groq API key")
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = model
 

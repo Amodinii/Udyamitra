@@ -4,28 +4,34 @@ using the Nominatim (OpenStreetMap) API.
 '''
 
 import requests
+import sys
+from Logging.logger import logger
+from Exception.exception import UdayamitraException
 from typing import Dict, Optional
 import time
-
 class LocationNormalizer:
     NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-
     def __init__(self, delay: float = 1.0):
-        self.delay = delay  # to respect Nominatim rate limits
-        self.cache = {}     # simple in-memory cache
+        try:
+            logger.info("Initializing LocationNormalizer")
+            self.delay = delay  # to respect Nominatim rate limits
+            self.cache = {}     # simple in-memory cache
+        except Exception as e:
+            logger.error(f"Failed to initialize LocationNormalizer: {e}")
+            raise UdayamitraException("Failed to initialize LocationNormalizer", sys)
 
     def normalize(self, raw_location: str) -> Dict[str, Optional[str]]:
-        if raw_location in self.cache:
-            return self.cache[raw_location]
-
-        params = {
-            "q": raw_location,
-            "format": "json",
-            "addressdetails": 1,
-            "limit": 1
-        }
-
         try:
+            logger.info(f"Normalizing location: {raw_location}")
+            if raw_location in self.cache:
+                return self.cache[raw_location]
+
+            params = {
+                "q": raw_location,
+                "format": "json",
+                "addressdetails": 1,
+                "limit": 1
+            }
             response = requests.get(self.NOMINATIM_URL, params=params, headers={"User-Agent": "Udyamitra/1.0"})
             time.sleep(self.delay)  # avoid hammering the API
             data = response.json()
@@ -46,6 +52,6 @@ class LocationNormalizer:
             self.cache[raw_location] = normalized
             return normalized
 
-        except Exception as e:
-            print(f"Error normalizing location '{raw_location}': {e}")
+        except UdayamitraException as e:
+            logger.error(f"Error normalizing location '{raw_location}': {e}")
             return {"raw": raw_location, "city": None, "state": None, "country": None}

@@ -3,7 +3,7 @@ test.py - Unit test for IntentPipeline abstraction
 '''
 
 from Meta.pipeline import IntentPipeline
-from router.model import Metadata
+from utility.model import Metadata
 
 # Sample mapping file (should match your test config)
 MAPPING_FILE = "Meta/mapping.json"
