@@ -31,3 +31,9 @@ class ToolTask(BaseModel):
 class ExecutionPlan(BaseModel):
     execution_type:  Literal["sequential", "parallel"]
     task_list: List[ToolTask]
+
+class SchemeExplanationResponse(BaseModel):
+    scheme_name: str
+    explanation: str
+    follow_up_suggestions: Optional[List[str]] = Field(default_factory=list)
+    sources: Optional[List[str]] = None
