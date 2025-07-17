@@ -11,6 +11,7 @@ from utility.model import SchemeExplanationResponse
 class SchemeExplainer:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         try:
+            logger.info("Starting SchemeExplainer...")
             logger.info(f"Initializing SchemeExplainer with model: {model}")
             self.llm_client = LLMClient(model=model)
         except Exception as e:

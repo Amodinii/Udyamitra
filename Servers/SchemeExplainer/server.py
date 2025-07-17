@@ -8,7 +8,7 @@ from .SchemeExplainer import SchemeExplainer
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
-mcp = FastMCP("SchemeExplainer", json_response=False, stateless_http=False)
+mcp = FastMCP("SchemeExplainer", stateless_http=True)
 
 @mcp.tool()
 async def explain_scheme(schema_dict: dict, documents: str = None) -> dict:
