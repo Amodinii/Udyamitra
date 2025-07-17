@@ -7,5 +7,6 @@ playwright
 sentence-transformers
 requests
 beautifulsoup4
+requests
 PyPDF2
 unstructured
