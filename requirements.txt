@@ -1,4 +1,10 @@
 pydantic
 groq
 astrapy
+langchain 
+langchain-community
+playwright
+sentence-transformers
+requests
+beautifulsoup4
 requests
