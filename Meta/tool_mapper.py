@@ -1,57 +1,48 @@
 '''
 tool_mapper.py - Maps extracted intents to actual tool names, ensuring validation and reducing hallucinations.
 '''
-from utility.model import Metadata
+from utility.model import Metadata, ToolRegistryEntry
+from utility.register_tools import load_registry_from_file
 from typing import Dict
-import json
+from pathlib import Path
 import sys
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
 class ToolMapper:
-    def __init__(self, mapping_file: str = "Meta/mapping.json"):
+    def __init__(self):
         try:
-            logger.info(f"Initializing ToolMapper with mapping file: {mapping_file}")
-            self.mapping_file = mapping_file
-            self.intent_to_tool = self.load_mapping()
-            self.available_tools = set(self.intent_to_tool.values())
+            logger.info(f"Initializing ToolMapper")
+            self.tool_registry: Dict[str, ToolRegistryEntry] = load_registry_from_file()
+            self.intent_to_tool: Dict[str, str] = self.build_reverse_mapping()
         except Exception as e:
             logger.error(f"Failed to initialize ToolMapper: {e}")
             raise UdayamitraException("Failed to initialize ToolMapper", sys)
 
-    def load_mapping(self) -> Dict[str, str]:
-        try:
-            logger.info(f"Loading mapping from file: {self.mapping_file}")
-            with open(self.mapping_file, 'r') as f:
-                tool_to_intents = json.load(f)
-            # Reverse mapping
-            intent_to_tool = {}
-            for tool, intents in tool_to_intents.items():
-                for intent in intents:
-                    intent_to_tool[intent] = tool
-            return intent_to_tool
-        except Exception as e:
-            logger.error(f"Failed to load mapping: {e}")
-            raise UdayamitraException("Failed to load mapping", sys)
+    def build_reverse_mapping(self) -> Dict[str, str]:
+        intent_to_tool = {}
+        for tool_name, entry in self.tool_registry.items():
+            for intent in entry.intents:
+                intent_to_tool[intent] = tool_name
+        return intent_to_tool
 
     def map_tools(self, metadata: Metadata) -> Metadata:
         try:
-            logger.info(f"Mapping tools for metadata: {metadata}")
             if not metadata.intents:
                 logger.warning("No intents found in metadata, skipping tool mapping.")
                 return metadata
-            mapped_tools = []
 
+            mapped_tools = set()
             for intent in metadata.intents:
-                if intent in self.intent_to_tool:
-                    tool = self.intent_to_tool[intent]
-                    if tool in self.available_tools:
-                        mapped_tools.append(tool)
+                tool = self.intent_to_tool.get(intent)
+                if tool:
+                    mapped_tools.add(tool)
                 else:
-                    print(f"Warning: Unrecognized intent '{intent}' — skipping.")
+                    logger.warning(f"Unrecognized intent '{intent}' — skipping.")
 
-            metadata.tools_required = list(set(mapped_tools))
+            metadata.tools_required = list(mapped_tools)
             return metadata
-        except UdayamitraException as e:
+
+        except Exception as e:
             logger.error(f"Error mapping tools: {e}")
-            raise e
+            raise UdayamitraException("Failed to map tools", sys)

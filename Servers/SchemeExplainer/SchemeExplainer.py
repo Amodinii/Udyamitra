@@ -6,7 +6,7 @@ import sys
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
-from utility.model import SchemeExplanationResponse
+from utility.model import SchemeMetadata, SchemeExplanationResponse
 
 class SchemeExplainer:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
@@ -18,7 +18,7 @@ class SchemeExplainer:
             logger.error(f"Failed to initialize SchemeExplainer: {e}")
             raise UdayamitraException("Failed to initialize SchemeExplainer", sys)
 
-    def explain_scheme(self, scheme_metadata: dict, retrieved_documents: str = None) -> SchemeExplanationResponse:
+    def explain_scheme(self, scheme_metadata: SchemeMetadata, retrieved_documents: str = None) -> SchemeExplanationResponse:
         try:
             system_prompt = """
                 You are a knowledgeable assistant that explains government schemes in India. 
@@ -36,8 +36,8 @@ class SchemeExplainer:
 
             user_prompt = f"""
                 Please explain the following scheme(s) to the user:
-                Metadata:
-                {scheme_metadata}
+                Scheme Metadata:
+                {scheme_metadata.model_dump_json(indent=2)}
                 Retrieved Documents (if any):
                 {retrieved_documents if retrieved_documents else "None"}
 

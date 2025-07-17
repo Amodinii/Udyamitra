@@ -5,12 +5,9 @@ test.py - Unit test for IntentPipeline abstraction
 from Meta.pipeline import IntentPipeline
 from utility.model import Metadata
 
-# Sample mapping file (should match your test config)
-MAPPING_FILE = "Meta/mapping.json"
-
 def test_pipeline():
-    pipeline = IntentPipeline(mapping_file=MAPPING_FILE)
-    query = "Is there a capital subsidy if I expand my unit into a Tier-2 city like Dharwad instead of Bengaluru?"
+    pipeline = IntentPipeline()
+    query = "Can you explain the benefits of the PMEGP scheme for women entrepreneurs in Maharashtra?"
 
     metadata: Metadata = pipeline.run(query)
     print(metadata)
