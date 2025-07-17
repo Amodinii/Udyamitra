@@ -1,87 +1,91 @@
 import os
 import json
-from pathlib import Path
-from dotenv import load_dotenv
-from langchain_community.document_loaders import PlaywrightURLLoader, PyMuPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import fitz
+from utility.LLM import LLMClient
+from Logging.logger import logger
 
-# === Load env vars ===
-load_dotenv()
-
-# === Re-fetch target URLs ===
-refetch_urls = [
-    "https://ism.gov.in/design-linked-incentive",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/production-linked-incentive-scheme-pli-2-0-for-it-hardware-wM0MDOtQWa",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/scheme-for-promotion-of-manufacturing-of-electronic-components-and-semiconductors-specs-AMxIDOtQWa",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-special-incentive-package-scheme-m-sips-IDNyETMtQWa",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-manufacturing-clusters-emc-scheme-kTO5EjMtQWa",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-electronics-manufacturing-clusters-emc-2-0-scheme-wNyEDOtQWa",
-    "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-hardware-schemes-AN1MDOtQWa",
-    "https://msh.meity.gov.in/",
-    "https://cleartax.in/s/support-international-patent-protection-electronics-information-technology-sip-eit",
-    "https://riscvindia.org/",
-    "https://wordpress.missionstartupkarnataka.org/wp-content/uploads/2021/07/Special-Incentives-Scheme-for-ESDM-OPG-Approval.pdf",
-    "https://eitbt.karnataka.gov.in/startup/public/policy/en",
-    "http://www.kitven.in/funds/karsemven-fund",
-    "https://itbtst.karnataka.gov.in/storage/pdf-files/EoI%20for%20Anchor%20Units%20FOR%20emc2ENG.pdf",
-    "https://www.coe-iot.com/"
-]
-
-# === Directory to save extracted content ===
-Path("rerun_results").mkdir(exist_ok=True)
-
-# === Scrape text from webpages ===
-def scrape_web(urls):
-    print("\n[INFO] Starting Playwright scrape...")
-    loader = PlaywrightURLLoader(urls=urls, remove_selectors=["header", "footer", "nav", "script", "style"])
-    docs = loader.load()
-    print(f"[INFO] Loaded {len(docs)} documents from web.")
-    return docs
-
-# === Scrape PDFs (if file extension ends with .pdf) ===
-def scrape_pdf(url):
-    filename = url.split("/")[-1].split("?")[0]
-    pdf_path = f"temp_pdfs/{filename}"
-    Path("temp_pdfs").mkdir(exist_ok=True)
+def read_text_file(filepath: str) -> str:
     try:
-        # Download PDF
-        with open(pdf_path, "wb") as f:
-            f.write(requests.get(url, timeout=15).content)
-
-        loader = PyMuPDFLoader(pdf_path)
-        return loader.load()
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return f.read()
     except Exception as e:
-        print(f"[ERROR] Failed to load PDF from {url}: {e}")
-        return []
+        logger.error(f"Failed to read text file {filepath}: {e}")
+        return ""
 
-# === Split and save chunks ===
-def save_chunks(documents, name):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
-    chunks = splitter.split_documents(documents)
-    texts = [doc.page_content for doc in chunks]
-    with open(f"rerun_results/{name}.json", "w", encoding="utf-8") as f:
-        json.dump(texts, f, indent=2)
-    print(f"[SAVED] {len(texts)} chunks → rerun_results/{name}.json")
+def extract_text_from_pdf(filepath: str) -> str:
+    try:
+        doc = fitz.open(filepath)
+        text = "\n".join(page.get_text() for page in doc)
+        return text
+    except Exception as e:
+        logger.error(f"Failed to extract PDF {filepath}: {e}")
+        return ""
 
-# === Main Loop ===
+def generate_schema(text_content: str, source_files: list, source_url: str) -> dict:
+    llm = LLMClient()
+
+    SYSTEM_MSG = "You are an expert data extractor who creates metadata for government scheme documents."
+
+    USER_PROMPT = f"""
+Given the following content from a government scheme (webpage + PDFs), extract structured metadata using this schema:
+
+{{
+  "scheme_name": ...,
+  "scheme_type": "National" or "State",
+  "admin_body": ...,
+  "location_scope": "Pan-India" or state name,
+  "duration": ...,
+  "sector_tags": [...],
+  "target_entities": [...],
+  "user_stage": [...],
+  "pre_approval_required": True or False,
+  "source_url": {source_url}
+  "source_files": {json.dumps(source_files)}
+}}
+
+--- START CONTENT ---
+{text_content[:8000]}
+--- END CONTENT ---
+Only return the JSON.
+"""
+
+    return llm.run_json(SYSTEM_MSG, USER_PROMPT)
+
+def main():
+    # ==== UPDATE THESE ====
+    webpage_txt = "data/raw/webpages/msips.txt"
+    pdf_files = [
+        "data/raw/pdfs/msips.pdf",
+        "data/raw/pdfs/msips_closing.pdf",
+        "data/raw/pdfs/msips_notification.pdf",
+        "data/raw/pdfs/msips_notification2.pdf",
+        "data/raw/pdfs/msips_guidelines.pdf",
+        "data/raw/pdfs/msips_guidelines2.pdf",
+        "data/raw/pdfs/msips_guidelines3.pdf",
+        "data/raw/pdfs/msips_guidelines4.pdf",
+        "data/raw/pdfs/msips_guidelines5.pdf",
+        "data/raw/pdfs/msips_guidelines6.pdf",
+        "data/raw/pdfs/amend_msips1.pdf"
+    ]
+    output_file = "output/msips_schema.json"
+    # =======================
+
+    logger.info("Reading webpage text...")
+    all_text = read_text_file(webpage_txt)
+
+    logger.info("Reading PDFs...")
+    for pdf in pdf_files:
+        pdf_text = extract_text_from_pdf(pdf)
+        all_text += f"\n\n--- PDF: {os.path.basename(pdf)} ---\n" + pdf_text
+
+    logger.info("Generating schema from LLM...")
+    schema = generate_schema(all_text, [webpage_txt] + pdf_files, source_url = "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-special-incentive-package-scheme-m-sips-IDNyETMtQWa" )
+
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(schema, f, indent=2)
+
+    logger.info(f"Schema written to {output_file}")
+
 if __name__ == "__main__":
-    import requests
-
-    for url in refetch_urls:
-        print(f"\nProcessing {url}...")
-
-        if url.endswith(".pdf"):
-            docs = scrape_pdf(url)
-            key = Path(url).stem.replace(" ", "_").lower()
-        else:
-            try:
-                docs = scrape_web([url])
-                key = url.split("/")[2].replace(".", "_")
-            except Exception as e:
-                print(f"[SKIPPED] Could not fetch: {e}")
-                continue
-
-        if docs:
-            save_chunks(docs, key)
-        else:
-            print("[WARNING] No docs found. Skipped.")
+    main()
