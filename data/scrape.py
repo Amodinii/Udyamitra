@@ -1,142 +1,145 @@
 import os
-from dotenv import load_dotenv
-from astrapy.db import AstraDB
+import json
+import re
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
+from typing import List, Dict
 from langchain_community.document_loaders import PlaywrightURLLoader, PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
+from utility.LLM import LLMClient
 
-# Load environment variables
-load_dotenv()
-ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
-ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
-COLLECTION_NAME = "electronic_schemes"
+def get_clean_web_content(url: str) -> str:
+    try:
+        loader = PlaywrightURLLoader(urls=[url], remove_selectors=["header", "footer", "nav", ".navbar", ".footer"])
+        docs = loader.load()
+        if docs:
+            return docs[0].page_content[:8000]  # Trimming for LLM safety
+    except Exception as e:
+        print(f"[ERROR] Web scrape failed for {url} → {e}")
+    return ""
 
-# Web Page Definitions
-web_pages = [
-    {
-        "url": "https://www.meity.gov.in/offerings/schemes-and-services/details/production-linked-incentive-scheme-pli-2-0-for-it-hardware-wM0MDOtQWa",
-        "metadata": {
-            "scheme_name": "PLI 2.0 for IT Hardware",
-            "scheme_type": "National",
-            "admin_body": "MeitY",
-            "location_scope": "Pan-India",
-            "user_stage": ["Awareness", "Research", "Decision", "Application"],
-            "sector_tags": ["Electronics", "IT Hardware"],
-            "pre_approval_required": True
+def extract_pdfs_from_page(url: str) -> List[str]:
+    try:
+        html = requests.get(url, timeout=15).text
+        soup = BeautifulSoup(html, "html.parser")
+        base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+        return [urljoin(base_url, a['href']) for a in soup.find_all('a', href=True) if a['href'].lower().endswith('.pdf')]
+    except Exception as e:
+        print(f"[ERROR] Failed to extract PDFs from {url} → {e}")
+        return []
+
+def extract_pdf_content(pdf_urls: List[str]) -> str:
+    combined_text = ""
+    for pdf_url in pdf_urls:
+        try:
+            response = requests.get(pdf_url, timeout=10)
+            filename = f"temp_{os.path.basename(pdf_url).split('?')[0]}"
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+
+            loader = PyMuPDFLoader(filename)
+            docs = loader.load()
+            combined_text += "\n".join([doc.page_content for doc in docs])
+            os.remove(filename)
+
+        except Exception as e:
+            print(f"[WARN] Skipping PDF {pdf_url} → {e}")
+    return combined_text.strip()
+
+def chunk_text(text: str) -> List[str]:
+    splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=150)
+    return [chunk.page_content for chunk in splitter.create_documents([text])]
+
+# === PROMPT & METADATA ===
+SYSTEM_MSG = "You extract structured metadata from government scheme webpages."
+PROMPT_TEMPLATE = """
+Extract JSON metadata from the scheme page below using this schema:
+
+{{
+  "scheme_name": ...,
+  "scheme_type": "National" or "State",
+  "admin_body": ...,
+  "location_scope": "Pan-India" or state name,
+  "duration": ...,
+  "sector_tags": [...],
+  "target_entities": [...],
+  "user_stage": [...],
+  "pre_approval_required": true or false,
+  "source_url": "{source_url}"
+}}
+
+Only return a clean JSON object. Do not explain anything. Skip missing fields.
+
+--- PAGE CONTENT START ---
+{page_content}
+--- PAGE CONTENT END ---
+"""
+
+# === MAIN ===
+if __name__ == "__main__":
+    url_list = [
+        "https://ism.gov.in/design-linked-incentive",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/production-linked-incentive-scheme-pli-2-0-for-it-hardware-wM0MDOtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/scheme-for-promotion-of-manufacturing-of-electronic-components-and-semiconductors-specs-AMxIDOtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-special-incentive-package-scheme-m-sips-IDNyETMtQWa",
+        "https://msh.meity.gov.in/",
+        "https://cleartax.in/s/support-international-patent-protection-electronics-information-technology-sip-eit",
+        "https://ism.gov.in/",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-manufacturing-clusters-emc-scheme-kTO5EjMtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-electronics-manufacturing-clusters-emc-2-0-scheme-wNyEDOtQWa",
+        "https://www.meity.gov.in/offerings/schemes-and-services/details/electronic-hardware-schemes-AN1MDOtQWa",
+        "https://clcss.dcmsme.gov.in/",
+        "https://msme.gov.in/schemes/schemes-national-small-industries-corporation",
+        "https://riscvindia.org/#:~:text=RISC%2DV%20is%20an%20open,compared%20to%20closed%2Dsource%20alternatives",
+        "https://wordpress.missionstartupkarnataka.org/wp-content/uploads/2021/07/Special-Incentives-Scheme-for-ESDM-OPG-Approval.pdf",
+        "https://eitbt.karnataka.gov.in/startup/public/policy/en",
+        "http://www.kitven.in/funds/karsemven-fund",
+        "https://itbtst.karnataka.gov.in/storage/pdf-files/EoI%20for%20Anchor%20Units%20FOR%20emc2ENG.pdf",
+        "https://www.coe-iot.com/"
+    ]    
+    llm = LLMClient()
+    final_records = []
+
+    for url in url_list:
+        print(f"\nProcessing {url}...")
+        web_text = get_clean_web_content(url)
+        if not web_text:
+            print("Skipped due to page scrape failure.")
+            continue
+
+        # Extract metadata
+        try:
+            prompt = PROMPT_TEMPLATE.format(source_url=url, page_content=web_text)
+            metadata = llm.run_json(SYSTEM_MSG, prompt)
+        except Exception as e:
+            print(f"[ERROR] Metadata extraction failed for {url} → {e}")
+            continue
+
+        # Extract PDF content
+        pdf_urls = extract_pdfs_from_page(url)
+        pdf_text = extract_pdf_content(pdf_urls)
+
+        # Combine all raw text and chunk
+        raw_text = web_text + "\n\n" + pdf_text
+        chunks = chunk_text(raw_text)
+
+        # Prepare output
+        record = {
+            "id": re.sub(r'\W+', '_', metadata.get("scheme_name", "unnamed").lower()),
+            "scheme_name": metadata.get("scheme_name", ""),
+            "aliases": [],
+            "source_urls": [url] + pdf_urls,
+            "raw_text": raw_text[:5000], 
+            "chunks": chunks,
+            "metadata": {k: v for k, v in metadata.items() if k not in ["scheme_name", "source_url"]}
         }
-    },
-    {
-    "url": "https://ism.gov.in/design-linked-incentive",
-    "metadata": {
-        "scheme_name": "Design Linked Incentive (DLI) Scheme",
-        "scheme_type": "National",
-        "admin_body": "MeitY / India Semiconductor Mission",
-        "location_scope": "Pan-India",
-        "duration": "2022-2025",
-        "sector_tags": ["Semiconductor", "EDA Tools", "IP Cores", "Design"],
-        "target_entities": ["Startups", "MSMEs", "Domestic Companies"],
-        "user_stage": ["Research", "Decision", "Application", "Follow-up"],
-        "pre_approval_required": True,
-        "source_url": "https://ism.gov.in/design-linked-incentive"
-        }
-    },
-    {
-    "url":"https://www.meity.gov.in/offerings/schemes-and-services/details/production-linked-incentive-scheme-pli-2-0-for-it-hardware-wM0MDOtQWa",
-    "metadata": {
-        "scheme_name": "PLI 2.0 for IT Hardware",
-        "scheme_type": "National",
-        "admin_body": "MeitY",
-        "location_scope": "Pan-India",
-        "duration": "2023-2031",
-        "sector_tags": ["Electronics", "IT Hardware", "Manufacturing"],
-        "target_entities": ["Global Companies", "Hybrid Companies", "Domestic MSMEs"],
-        "user_stage": ["Research", "Decision", "Application", "Follow-up"],
-        "pre_approval_required": True,
-        "source_url": "https://www.meity.gov.in/offerings/schemes-and-services/details/production-linked-incentive-scheme-pli-2-0-for-it-hardware-wM0MDOtQWa"
-        }
-    },
-    {
-    "url":"https://www.meity.gov.in/offerings/schemes-and-services/details/scheme-for-promotion-of-manufacturing-of-electronic-components-and-semiconductors-specs-AMxIDOtQWa",
-    "metadata":{
-        "scheme_name": "SPECS (Scheme for Promotion of Manufacturing of Electronic Components and Semiconductors)",
-        "scheme_type": "National",
-        "admin_body": "MeitY",
-        "location_scope": "Pan-India",
-        "duration": "2020-2023 (applications open until 31 Mar 2023)",
-        "sector_tags": ["Electronics", "Semiconductors", "Components", "Manufacturing"],
-        "target_entities": ["Domestic electronics manufacturers", "New units", "Expansion units"],
-        "user_stage": ["Research", "Decision", "Application", "Follow-up"],
-        "pre_approval_required": True,
-        "source_url": "https://www.meity.gov.in/offerings/schemes-and-services/details/scheme-for-promotion-of-manufacturing-of-electronic-components-and-semiconductors-specs-AMxIDOtQWa"
-        }
-    }
 
-]
+        final_records.append(record)
+        print(f"Completed {record['id']}")
 
-#PDF File Definitions
-pdf_files = [
-    {
-        "file_path": "docs/MSIPS_Guidelines_2022.pdf",  # You download this manually beforehand
-        "metadata": {
-            "scheme_name": "MSIPS",
-            "scheme_type": "National",
-            "admin_body": "MeitY",
-            "location_scope": "Pan-India",
-            "user_stage": ["Application"],
-            "sector_tags": ["Electronics", "Capital Subsidy"],
-            "pre_approval_required": True,
-            "source_type": "pdf",
-            "source_title": "MSIPS Guidelines 2022",
-            "source_url": "https://www.meity.gov.in/path-to/msips-guidelines-2022.pdf"
-        }
-    },
-    # Add more PDFs here...
-]
+    # Save result
+    with open("processed_scheme_docs.json", "w", encoding="utf-8") as f:
+        json.dump(final_records, f, indent=2, ensure_ascii=False)
 
-# Load Web Pages
-loader = PlaywrightURLLoader(urls=[p["url"] for p in web_pages], remove_selectors=["header", "footer"])
-web_docs = loader.load()
-
-# Attach metadata to web chunks
-splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
-all_chunks = []
-
-for i, doc in enumerate(web_docs):
-    base_meta = web_pages[i]["metadata"]
-    chunks = splitter.split_documents([doc])
-    for chunk in chunks:
-        chunk.metadata.update(base_meta)
-    all_chunks.extend(chunks)
-
-# Load PDF Files
-for pdf in pdf_files:
-    pdf_loader = PyMuPDFLoader(pdf["file_path"])
-    pdf_docs = pdf_loader.load()
-    chunks = splitter.split_documents(pdf_docs)
-    for chunk in chunks:
-        chunk.metadata.update(pdf["metadata"])
-    all_chunks.extend(chunks)
-
-print(f"Total chunks prepared: {len(all_chunks)}")
-
-#Embed & Upload to AstraDB
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
-embeddings = embedder.encode([chunk.page_content for chunk in all_chunks], show_progress_bar=True)
-
-astra_db = AstraDB(
-    token=ASTRA_DB_APPLICATION_TOKEN,
-    api_endpoint=ASTRA_DB_API_ENDPOINT
-)
-collection = astra_db.collection(COLLECTION_NAME)
-
-docs_to_upload = []
-for i, chunk in enumerate(all_chunks):
-    docs_to_upload.append({
-        "_id": f"chunk_{i}",
-        "text": chunk.page_content,
-        "metadata": chunk.metadata,
-        "$vector": embeddings[i].tolist()
-    })
-
-result = collection.insert_many(docs_to_upload)
-print(f"Uploaded {len(docs_to_upload)} chunks to AstraDB successfully.")
+    print(f"\nSaved {len(final_records)} records to processed_scheme_docs.json")
