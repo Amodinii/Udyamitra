@@ -10,11 +10,11 @@ from .extractor import MetadataExtractor
 from .tool_mapper import ToolMapper
 
 class IntentPipeline:
-    def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct", mapping_file: str = "Meta/mapping.json"):
+    def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         try:
-            logger.info(f"Initializing IntentPipeline with model: {model} and mapping file: {mapping_file}")
+            logger.info(f"Initializing IntentPipeline")
             self.extractor = MetadataExtractor(model=model)
-            self.tool_mapper = ToolMapper(mapping_file=mapping_file)
+            self.tool_mapper = ToolMapper()
         except Exception as e:
             logger.error(f"Failed to initialize IntentPipeline: {e}")
             raise UdayamitraException("Failed to initialize IntentPipeline", sys)
