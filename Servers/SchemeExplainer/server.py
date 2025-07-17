@@ -7,8 +7,9 @@ from mcp.server.fastmcp import FastMCP
 from .SchemeExplainer import SchemeExplainer
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
+from utility.register_tools import generate_tool_registry_entry, register_tool
 
-mcp = FastMCP("SchemeExplainer", json_response=False, stateless_http=False)
+mcp = FastMCP("SchemeExplainer", stateless_http=True)
 
 @mcp.tool()
 async def explain_scheme(schema_dict: dict, documents: str = None) -> dict:
@@ -20,3 +21,8 @@ async def explain_scheme(schema_dict: dict, documents: str = None) -> dict:
     except Exception as e:
         logger.error(f"Failed to explain scheme: {e}")
         raise UdayamitraException("Failed to explain scheme", sys)
+
+if __name__ == "__main__":
+    tool_info = generate_tool_registry_entry()
+    register_tool(tool_info)
+    mcp.run(transport='streamable-http')
