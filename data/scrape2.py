@@ -53,21 +53,11 @@ Only return the JSON.
 
 def main():
     # ==== UPDATE THESE ====
-    webpage_txt = "data/raw/webpages/msips.txt"
+    webpage_txt = ""
     pdf_files = [
-        "data/raw/pdfs/msips.pdf",
-        "data/raw/pdfs/msips_closing.pdf",
-        "data/raw/pdfs/msips_notification.pdf",
-        "data/raw/pdfs/msips_notification2.pdf",
-        "data/raw/pdfs/msips_guidelines.pdf",
-        "data/raw/pdfs/msips_guidelines2.pdf",
-        "data/raw/pdfs/msips_guidelines3.pdf",
-        "data/raw/pdfs/msips_guidelines4.pdf",
-        "data/raw/pdfs/msips_guidelines5.pdf",
-        "data/raw/pdfs/msips_guidelines6.pdf",
-        "data/raw/pdfs/amend_msips1.pdf"
+        "data/raw/pdfs/karnataka_industrial_policy.pdf"
     ]
-    output_file = "output/msips_schema.json"
+    output_file = "output/kip_schema.json"
     # =======================
 
     logger.info("Reading webpage text...")
@@ -79,7 +69,7 @@ def main():
         all_text += f"\n\n--- PDF: {os.path.basename(pdf)} ---\n" + pdf_text
 
     logger.info("Generating schema from LLM...")
-    schema = generate_schema(all_text, [webpage_txt] + pdf_files, source_url = "https://www.meity.gov.in/offerings/schemes-and-services/details/modified-special-incentive-package-scheme-m-sips-IDNyETMtQWa" )
+    schema = generate_schema(all_text, [webpage_txt] + pdf_files, source_url = "https://investkarnataka.co.in/wp-content/uploads/2025/02/IndustrialPolicy2025_PrintPagesSingle_.pdf" )
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
