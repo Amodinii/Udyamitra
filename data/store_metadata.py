@@ -1,14 +1,26 @@
 import os
 import json
-from astrapy.db import AstraDB
+from astrapy import DataAPIClient
 from Logging.logger import logger
+from dotenv import load_dotenv
 
-db = AstraDB(
-    api_endpoint=os.getenv("ASTRA_DB_API_ENDPOINT"),
-    token=("ASTRA_DB_APPLICATION_TOKEN"),
+load_dotenv()
+
+client = DataAPIClient()
+db = client.get_database(
+    os.getenv("ASTRA_DB_ENDPOINT"),
+    token=os.getenv("ASTRA_DB_TOKEN")
 )
 
-collection = db.get_collection("schemes_metadata")
+collection_name = "Schemes_metadata"
+if collection_name not in db.list_collections():
+    db.create_collection(collection_name)
+    logger.info(f"Created collection: {collection_name}")
+else:
+    logger.info(f"Using existing collection: {collection_name}")
+
+collection = db.get_collection(collection_name)
+
 
 def load_metadata_json(json_path: str) -> dict:
     try:

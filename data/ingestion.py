@@ -1,22 +1,33 @@
 import os
 import json
 import fitz
-from astrapy.db import AstraDB
+from astrapy import DataAPIClient
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from Logging.logger import logger
+from dotenv import load_dotenv 
+
+load_dotenv()
 
 PDF_DIR = "data/raw/pdfs"
 TXT_DIR = "data/raw/webpages"
-COLLECTION_NAME = "scheme_chunks"
+COLLECTION_NAME = "Scheme_chunks"
 
 embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-astra_db = AstraDB(
-    api_endpoint=os.getenv("ASTRA_DB_API_ENDPOINT"),
-    token=os.getenv("ASTRA_DB_APPLICATION_TOKEN")
+client = DataAPIClient()
+astra_db = client.get_database(
+    api_endpoint=os.getenv("ASTRA_DB_ENDPOINT"),
+    token=os.getenv("ASTRA_DB_TOKEN")
 )
-collection = astra_db.collection(COLLECTION_NAME)
+
+if COLLECTION_NAME not in astra_db.list_collections():
+    astra_db.create_collection(COLLECTION_NAME)
+    logger.info(f"Created collection: {COLLECTION_NAME}")
+else:
+    logger.info(f"Using existing collection: {COLLECTION_NAME}")
+
+collection = astra_db.get_collection(COLLECTION_NAME)
 
 def extract_text_from_pdf(filepath):
     try:
@@ -38,7 +49,7 @@ def chunk_and_embed(text, metadata):
     splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
     chunks = splitter.split_text(text)
 
-    return [{
+    return [ {
         "id": f"{metadata['id']}_chunk_{i}",
         "chunk": chunk,
         "embedding": embedding_model.encode(chunk).tolist(),
@@ -48,10 +59,12 @@ def chunk_and_embed(text, metadata):
 def ingest_all():
     groups = {}
 
-    for fname in os.listdir(PDF_DIR):
-        if fname.endswith(".pdf"):
-            key = os.path.splitext(fname)[0]
-            groups.setdefault(key, {}).setdefault("pdfs", []).append(os.path.join(PDF_DIR, fname))
+    for root, _, files in os.walk(PDF_DIR):
+        for fname in files:
+            if fname.endswith(".pdf"):
+                key = os.path.splitext(fname)[0]
+                pdf_path = os.path.join(root, fname)
+                groups.setdefault(key, {}).setdefault("pdfs", []).append(pdf_path)
 
     for fname in os.listdir(TXT_DIR):
         if fname.endswith(".txt"):
@@ -69,7 +82,7 @@ def ingest_all():
             text += "\n" + extract_text_from_pdf(pdf_path)
 
         if not text.strip():
-            logger.warning("No text found for group, skipping.")
+            logger.warning(f"No text found for group {doc_id}, skipping.")
             continue
 
         metadata = {
