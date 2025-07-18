@@ -39,7 +39,7 @@ Given the following content from a government scheme (webpage + PDFs), extract s
   "target_entities": [...],
   "user_stage": [...],
   "pre_approval_required": True or False,
-  "source_url": {source_url}
+  "source_url": {source_url},
   "source_files": {json.dumps(source_files)}
 }}
 
@@ -53,11 +53,50 @@ Only return the JSON.
 
 def main():
     # ==== UPDATE THESE ====
-    webpage_txt = ""
+    webpage_txt = "data/raw/webpages/NSIC/Digital service felicitation.txt"
     pdf_files = [
-        "data/raw/pdfs/karnataka_industrial_policy.pdf"
+        "data/raw/pdfs/NSIC/3.OnlineWorkshopsolarBusiness02082021.pdf",
+        "data/raw/pdfs/NSIC/3DModelingAnalysis_21022023.pdf",
+        "data/raw/pdfs/NSIC/24.TestingFacilities03082021.pdf",
+        "data/raw/pdfs/NSIC/activity-brochure01072021.pdf",
+        "data/raw/pdfs/NSIC/Beautician_04072024.pdf",
+        "data/raw/pdfs/NSIC/BoutiqueManagement_04072024.pdf",
+        "data/raw/pdfs/NSIC/COAL_FY_2021-22_07062024.pdf",
+        "data/raw/pdfs/NSIC/COAL_FY_2022-23_07062024.pdf",
+        "data/raw/pdfs/NSIC/COAL_FY_2023-24_07062024.pdf",
+        "data/raw/pdfs/NSIC/design-training-calendar_28082024.pdf",
+        "data/raw/pdfs/NSIC/Details_of_Testing_23042024.pdf",
+        "data/raw/pdfs/NSIC/DIC29072019.pdf",
+        "data/raw/pdfs/NSIC/DNB_PNP_LIST_25012023.pdf",
+        "data/raw/pdfs/NSIC/DSF_Customer_Application_Form_17072023.pdf",
+        "data/raw/pdfs/NSIC/EDPFORM052022_U20062022.pdf",
+        "data/raw/pdfs/NSIC/Entrepreneurship_Development_Programme_04072024.pdf",
+        "data/raw/pdfs/NSIC/FAQs-NSIC.pdf",
+        "data/raw/pdfs/NSIC/Incubator_Training_Calendar_04072024.pdf",
+        "data/raw/pdfs/NSIC/Job_oriented_courses_04072024.pdf",
+        "data/raw/pdfs/NSIC/Job-fair-24012025.pdf",
+        "data/raw/pdfs/NSIC/Job-fair-27092024.pdf",
+        "data/raw/pdfs/NSIC/KMC29072019.pdf",
+        "data/raw/pdfs/NSIC/Mechanical_Training_Calendar_20022023.pdf",
+        "data/raw/pdfs/NSIC/NCVT_Advetisement_04072023.pdf",
+        "data/raw/pdfs/NSIC/new29072019.pdf",
+        "data/raw/pdfs/NSIC/NTSC_Okhla_ElectronicsElectricalCourses_11022025.pdf",
+        "data/raw/pdfs/NSIC/PDReverseEngg_21022023.pdf",
+        "data/raw/pdfs/NSIC/RapidPrototyping-3DPrinting_21022023.pdf",
+        "data/raw/pdfs/NSIC/RawMaterialAssistance.pdf",
+        "data/raw/pdfs/NSIC/RMA-APP-14072023.pdf",
+        "data/raw/pdfs/NSIC/RMDFAQs_04112022.pdf",
+        "data/raw/pdfs/NSIC/tmscheme.pdf",
+        "data/raw/pdfs/NSIC/Tool_Room_MechanicalDesign_21022023.pdf",
+        "data/raw/pdfs/NSIC/Training_Calendar_2023-24_27092023.pdf",
+        "data/raw/pdfs/NSIC/Training_Calendar_Multimedia_Website_Development_Digital_Marketing_08072024.pdf",
+        "data/raw/pdfs/NSIC/Trainingon_ANSYS_Software_21022023.pdf",
+        "data/raw/pdfs/NSIC/TrainingReverseEngg_21022023.pdf",
+        "data/raw/pdfs/NSIC/trg_cal_Computer_Course_Calender_08082024.pdf",
+        "data/raw/pdfs/NSIC/Workshop_CMM_Leaflet_20022023.pdf",
+        "data/raw/pdfs/NSIC/Workshop_SPARE_CAPACITY_AND_JOB WORK_20022023.pdf"
     ]
-    output_file = "output/kip_schema.json"
+    output_file = "output/nsic_schema.json"
     # =======================
 
     logger.info("Reading webpage text...")
@@ -69,7 +108,7 @@ def main():
         all_text += f"\n\n--- PDF: {os.path.basename(pdf)} ---\n" + pdf_text
 
     logger.info("Generating schema from LLM...")
-    schema = generate_schema(all_text, [webpage_txt] + pdf_files, source_url = "https://investkarnataka.co.in/wp-content/uploads/2025/02/IndustrialPolicy2025_PrintPagesSingle_.pdf" )
+    schema = generate_schema(all_text, [webpage_txt] + pdf_files, source_url = "https://msme.gov.in/schemes/schemes-national-small-industries-corporation" )
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
