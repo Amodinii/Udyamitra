@@ -5,7 +5,7 @@ from typing import List, Dict
 from groq import Groq
 
 class LLMClient:
-    def __init__(self, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         if os.getenv("GROQ_API_KEY"):
             print("Groq API key is there")
         else:
