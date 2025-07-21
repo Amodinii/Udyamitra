@@ -8,6 +8,7 @@ from .EligibilityChecker import EligibilityChecker
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import generate_tool_registry_entry, register_tool
+from utility.model import EligibilityCheckRequest
 
 mcp = FastMCP("EligibilityChecker", stateless_http=True)
 
@@ -16,7 +17,8 @@ async def check_eligibility(schema_dict: dict, documents: str = None) -> dict:
     try:
         logger.info(f"Received eligibility check request: {schema_dict}")
         checker = EligibilityChecker()
-        response = checker.check_eligibility(request=schema_dict, retrieved_documents=documents)
+        request_obj = EligibilityCheckRequest(**schema_dict)
+        response = checker.check_eligibility(request=request_obj, retrieved_documents=documents)
         return response
     except Exception as e:
         logger.error(f"Failed to check eligibility: {e}")
