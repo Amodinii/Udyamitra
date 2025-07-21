@@ -209,3 +209,5 @@ __marimo__/
 #Data
 data/raw/
 output/
+output.json
+test.py
