@@ -8,6 +8,7 @@ from .SchemeExplainer import SchemeExplainer
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import generate_tool_registry_entry, register_tool
+from utility.model import SchemeMetadata
 
 mcp = FastMCP("SchemeExplainer", stateless_http=True)
 
@@ -16,7 +17,8 @@ async def explain_scheme(schema_dict: dict, documents: str = None) -> dict:
     try:
         logger.info(f"Received request to explain scheme: {schema_dict}")
         scheme_explainer = SchemeExplainer()
-        response = scheme_explainer.explain_scheme(scheme_metadata=schema_dict, retrieved_documents=documents)
+        metadata_obj = SchemeMetadata(**schema_dict)
+        response = scheme_explainer.explain_scheme(scheme_metadata=metadata_obj, retrieved_documents=documents)
         return response
     except Exception as e:
         logger.error(f"Failed to explain scheme: {e}")
