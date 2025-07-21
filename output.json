@@ -1,0 +1,36 @@
+{
+  "SchemeExplainer": {
+    "tool": "SchemeExplainer",
+    "output_text": "{\n  \"scheme_name\": \"PMEGP\",\n  \"explanation\": \"The PMEGP (Prime Minister's Employment Generation Programme) is a government scheme designed to promote entrepreneurship among women and other marginalized groups in India, including Maharashtra. As a woman entrepreneur in Maharashtra, you can benefit from this scheme by getting financial assistance to start your own business. The scheme provides subsidies and margin money assistance to set up new businesses, which can be used for various ventures such as manufacturing, service, or business enterprises. The PMEGP is implemented by the Ministry of Micro, Small and Medium Enterprises (MSME) and is executed by Khadi and Village Industries Commission (KVIC) in rural areas and urban areas through District Industries Centres.\",\n  \"follow_up_suggestions\": [\n    \"Check the official PMEGP website or visit the nearest KVIC/KVIB office to understand the current guidelines and application process.\",\n    \"Consult with a local business advisor to determine the feasibility of your business idea and prepare a project report.\"\n  ],\n  \"sources\": [\n    \"https://www.kvic.gov.in/\",\n    \"https://msme.gov.in/\"\n  ]\n}",
+    "raw_output": {
+      "meta": null,
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"scheme_name\": \"PMEGP\",\n  \"explanation\": \"The PMEGP (Prime Minister's Employment Generation Programme) is a government scheme designed to promote entrepreneurship among women and other marginalized groups in India, including Maharashtra. As a woman entrepreneur in Maharashtra, you can benefit from this scheme by getting financial assistance to start your own business. The scheme provides subsidies and margin money assistance to set up new businesses, which can be used for various ventures such as manufacturing, service, or business enterprises. The PMEGP is implemented by the Ministry of Micro, Small and Medium Enterprises (MSME) and is executed by Khadi and Village Industries Commission (KVIC) in rural areas and urban areas through District Industries Centres.\",\n  \"follow_up_suggestions\": [\n    \"Check the official PMEGP website or visit the nearest KVIC/KVIB office to understand the current guidelines and application process.\",\n    \"Consult with a local business advisor to determine the feasibility of your business idea and prepare a project report.\"\n  ],\n  \"sources\": [\n    \"https://www.kvic.gov.in/\",\n    \"https://msme.gov.in/\"\n  ]\n}",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "structuredContent": null,
+      "isError": false
+    }
+  },
+  "EligibilityChecker": {
+    "tool": "EligibilityChecker",
+    "output_text": "{\n  \"scheme_name\": \"Prime Minister Employment Generation Programme\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"caste_certificate_verification\",\n    \"project_approval_status\",\n    \"loan_application_status\"\n  ],\n  \"suggestions\": [\n    \"Verify caste certificate\",\n    \"Check project approval status\",\n    \"Confirm loan application status\"\n  ],\n  \"sources\": [\n    \"PMEGP guidelines\"\n  ]\n}",
+    "raw_output": {
+      "meta": null,
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"scheme_name\": \"Prime Minister Employment Generation Programme\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"caste_certificate_verification\",\n    \"project_approval_status\",\n    \"loan_application_status\"\n  ],\n  \"suggestions\": [\n    \"Verify caste certificate\",\n    \"Check project approval status\",\n    \"Confirm loan application status\"\n  ],\n  \"sources\": [\n    \"PMEGP guidelines\"\n  ]\n}",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "structuredContent": null,
+      "isError": false
+    }
+  }
+}
