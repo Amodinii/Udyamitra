@@ -11,3 +11,5 @@ requests
 PyPDF2
 unstructured
 mcp
+langchain-astradb
+langchain-huggingface

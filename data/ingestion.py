@@ -1,11 +1,13 @@
 import os
 import json
 import fitz
-from astrapy import DataAPIClient
+from dotenv import load_dotenv
+from Logging.logger import logger
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from Logging.logger import logger
-from dotenv import load_dotenv 
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_astradb import AstraDBVectorStore
+from langchain_core.documents import Document
 
 load_dotenv()
 
@@ -13,21 +15,16 @@ PDF_DIR = "data/raw/pdfs"
 TXT_DIR = "data/raw/webpages"
 COLLECTION_NAME = "Scheme_chunks"
 
-embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# Embedding model (LangChain wrapper)
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-client = DataAPIClient()
-astra_db = client.get_database(
+# Vector Store setup
+vectorstore = AstraDBVectorStore(
+    embedding=embedding_model,
+    collection_name=COLLECTION_NAME,
     api_endpoint=os.getenv("ASTRA_DB_ENDPOINT"),
-    token=os.getenv("ASTRA_DB_TOKEN")
+    token=os.getenv("ASTRA_DB_TOKEN"),
 )
-
-if COLLECTION_NAME not in astra_db.list_collections():
-    astra_db.create_collection(COLLECTION_NAME)
-    logger.info(f"Created collection: {COLLECTION_NAME}")
-else:
-    logger.info(f"Using existing collection: {COLLECTION_NAME}")
-
-collection = astra_db.get_collection(COLLECTION_NAME)
 
 def extract_text_from_pdf(filepath):
     try:
@@ -45,16 +42,21 @@ def extract_text_from_txt(filepath):
         logger.error(f"Error reading {filepath}: {e}")
         return ""
 
-def chunk_and_embed(text, metadata):
+def chunk_text(text, metadata):
     splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
     chunks = splitter.split_text(text)
 
-    return [ {
-        "id": f"{metadata['id']}_chunk_{i}",
-        "chunk": chunk,
-        "embedding": embedding_model.encode(chunk).tolist(),
-        "metadata": metadata
-    } for i, chunk in enumerate(chunks)]
+    documents = []
+    for i, chunk in enumerate(chunks):
+        doc = Document(
+            page_content=chunk,
+            metadata={
+                **metadata,
+                "chunk_index": i
+            }
+        )
+        documents.append(doc)
+    return documents
 
 def ingest_all():
     groups = {}
@@ -91,9 +93,12 @@ def ingest_all():
             "scheme_name": doc_id.replace("_", " ").title()
         }
 
-        chunks = chunk_and_embed(text, metadata)
-        collection.insert_many(chunks)
-        logger.info(f"Inserted {len(chunks)} chunks for {doc_id}")
+        documents = chunk_text(text, metadata)
+        try:
+            vectorstore.add_documents(documents)
+            logger.info(f"Inserted {len(documents)} chunks for {doc_id}")
+        except Exception as e:
+            logger.error(f"Failed to insert chunks for {doc_id}: {e}")
 
 if __name__ == "__main__":
     ingest_all()
