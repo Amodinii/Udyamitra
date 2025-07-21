@@ -1,11 +1,20 @@
-  {
-    "SchemeExplainer": {
-      "tool_name": "SchemeExplainer",
-      "intents": ["explain", "understand", "describe", "list_benefits"],
-      "endpoint": "http://127.0.0.1:10000/explain-scheme/mcp",
-      "input_schema": "SchemeMetadata",
-      "output_schema": "SchemeExplanationResponse",
-      "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
-      "description": "Explains schemes to users"
-    }
+{
+  "SchemeExplainer": {
+    "tool_name": "SchemeExplainer",
+    "intents": ["explain", "understand", "describe", "list_benefits"],
+    "endpoint": "http://127.0.0.1:10000/explain-scheme/mcp",
+    "input_schema": "SchemeMetadata",
+    "output_schema": "SchemeExplanationResponse",
+    "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "description": "Explains schemes to users"
+  },
+  "EligibilityChecker": {
+    "tool_name": "EligibilityChecker",
+    "intents": ["check_eligibility", "eligible", "am_i_eligible", "can_apply"],
+    "endpoint": "http://127.0.0.1:10001/check-eligibility/mcp",
+    "input_schema": "EligibilityCheckRequest",
+    "output_schema": "EligibilityCheckResponse",
+    "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "description": "Checks if a user is eligible for a given scheme based on their profile"
   }
+}
