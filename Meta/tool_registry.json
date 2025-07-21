@@ -1,12 +1,31 @@
 {
   "SchemeExplainer": {
     "tool_name": "SchemeExplainer",
-    "intents": ["explain", "understand", "describe", "list_benefits"],
+    "intents": [
+      "explain",
+      "understand",
+      "describe",
+      "list_benefits"
+    ],
     "endpoint": "http://127.0.0.1:10000/explain-scheme/mcp",
     "input_schema": "SchemeMetadata",
     "output_schema": "SchemeExplanationResponse",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
     "description": "Explains schemes to users"
+  },
+  "SchemeRetriever": {
+    "tool_name": "SchemeRetriever",
+    "intents": [
+      "search",
+      "retrieve",
+      "lookup",
+      "fetch"
+    ],
+    "endpoint": "http://127.0.0.1:10000/retrieve-scheme/mcp",
+    "input_schema": "RetrieveQuery",
+    "output_schema": "List[Dict]",
+    "model": "AstraDB + Groq Embedding",
+    "description": "Retrieves scheme metadata and content"
   },
   "EligibilityChecker": {
     "tool_name": "EligibilityChecker",
