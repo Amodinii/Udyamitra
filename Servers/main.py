@@ -7,27 +7,36 @@ import os
 import sys
 import contextlib
 import httpx
-
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from contextlib import AsyncExitStack
+
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
-# Importing the MCP servers
+# Import the MCP servers
 from Servers.SchemeExplainer.server import mcp as scheme_explainer_mcp
+from Servers.EligibilityChecker.server import mcp as eligibility_checker_mcp
+ALL_MCP_SERVERS = {
+    "/explain-scheme": scheme_explainer_mcp,
+    "/check-eligibility": eligibility_checker_mcp,
+}
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting MCP server lifespan...")
     try:
-        async with scheme_explainer_mcp.session_manager.run():
-            logger.info("Scheme MCP server started successfully")
+        async with AsyncExitStack() as stack:
+            for route, mcp in ALL_MCP_SERVERS.items():
+                await stack.enter_async_context(mcp.session_manager.run())
+                logger.info(f"{mcp.name} MCP server started successfully at {route}")
             yield
-            logger.info("Shutting down Scheme MCP server...")
+            logger.info("Shutting down all MCP servers...")
     except Exception as e:
-        logger.error(f"Failed to start MCP server: {e}")
-        raise UdayamitraException("Failed to start MCP server", sys)
+        logger.error(f"Failed during MCP server lifespan: {e}")
+        raise UdayamitraException("Failed to manage MCP servers", sys)
 
 try:
     logger.info("Creating FastAPI instance...")
@@ -61,10 +70,7 @@ async def config():
     return {
         "message": "Udayamitra MCP Server Configuration",
         "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "scheme_explainer": "/explain-scheme"
-        }
+        "endpoints": list(ALL_MCP_SERVERS.keys())
     }
 
 @server.options("/")
@@ -94,10 +100,11 @@ async def proxy_mcp(request: Request):
         logger.error(f"Proxying to MCP endpoint failed: {e}")
         return {"error": "Failed to proxy request"}
 
+# mounting the MCP servers
+for route, mcp in ALL_MCP_SERVERS.items():
+    server.mount(route, mcp.streamable_http_app())
 
-server.mount("/explain-scheme", scheme_explainer_mcp.streamable_http_app())
 PORT = int(os.getenv("SERVER_PORT", 10000))
 if __name__ == "__main__":
     logger.info(f"Starting Udayamitra MCP Server on port {PORT}")
-    import uvicorn
     uvicorn.run(server, host="0.0.0.0", port=PORT, log_level="debug")
