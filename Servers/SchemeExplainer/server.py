@@ -19,6 +19,7 @@ async def explain_scheme(schema_dict: dict, documents: str = None) -> dict:
         scheme_explainer = SchemeExplainer()
         metadata_obj = SchemeMetadata(**schema_dict)
         response = scheme_explainer.explain_scheme(scheme_metadata=metadata_obj, retrieved_documents=documents)
+        print(f"Response [SchemeExplainer]: {response}")
         return response
     except Exception as e:
         logger.error(f"Failed to explain scheme: {e}")
