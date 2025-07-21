@@ -26,5 +26,14 @@
     "output_schema": "List[Dict]",
     "model": "AstraDB + Groq Embedding",
     "description": "Retrieves scheme metadata and content"
+  },
+  "EligibilityChecker": {
+    "tool_name": "EligibilityChecker",
+    "intents": ["check_eligibility", "eligible", "am_i_eligible", "can_apply"],
+    "endpoint": "http://127.0.0.1:10001/check-eligibility/mcp",
+    "input_schema": "EligibilityCheckRequest",
+    "output_schema": "EligibilityCheckResponse",
+    "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "description": "Checks if a user is eligible for a given scheme based on their profile"
   }
 }
