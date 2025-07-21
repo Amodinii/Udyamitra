@@ -15,3 +15,5 @@ httpx
 fastapi
 uvicorn
 pytest
+langchain-astradb
+langchain-huggingface
