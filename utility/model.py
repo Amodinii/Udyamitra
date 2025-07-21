@@ -53,3 +53,17 @@ class SchemeExplanationResponse(BaseModel):
     explanation: str
     follow_up_suggestions: Optional[List[str]] = Field(default_factory=list)
     sources: Optional[List[str]] = None
+
+class EligibilityCheckRequest(BaseModel):
+    scheme_name: str
+    user_profile: UserProfile
+    context_entities: Optional[Dict[str, Union[str, List[str]]]] = None  # e.g. {"age": "28", "category": "SC", "sector": "manufacturing"}
+    query: Optional[str] = None  # original query from user, for logging/debugging
+
+class EligibilityCheckResponse(BaseModel):
+    scheme_name: str
+    eligible: Optional[bool]  # True / False / None (if not enough data)
+    reasons: List[str]
+    missing_fields: Optional[List[str]] = None  # What else we need to decide
+    suggestions: Optional[List[str]] = None  # Follow-up steps (maybe registration)
+    sources: Optional[List[str]] = None  # Where the rule came from
