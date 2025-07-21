@@ -1,0 +1,28 @@
+{
+    "scheme_name": "Prime Minister Employment Generation Programme",
+    "user_profile": {
+        "user_type": "woman-entrepreneur",
+        "location": {
+        "raw": "Bangalore Urban, Karnataka",
+        "city": "Bangalore Urban",
+        "state": "Karnataka",
+        "country": "India"
+        }
+    },
+    "context_entities": {
+        "age": "32",
+        "gender": "female",
+        "category": "OBC",
+        "annual_income": "250000",
+        "education_level": "Graduate",
+        "employment_status": "self_employed",
+        "has_disability": "false",
+        "sector": "manufacturing",
+        "project_cost": "800000",
+        "own_contribution": "10%",
+        "business_type": "manufacturing",
+        "project_cost_verification": "yes",
+        "funding_details": "Loan applied through KVIC"
+    },
+    "query": "Am I eligible for PMEGP?"
+}

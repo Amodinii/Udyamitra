@@ -12,6 +12,9 @@ from utility.LLM import LLMClient
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
+from dotenv import load_dotenv
+load_dotenv()
+
 class Planner:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         try:
