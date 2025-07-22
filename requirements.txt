@@ -11,5 +11,9 @@ requests
 PyPDF2
 unstructured
 mcp
+httpx
+fastapi
+uvicorn
+pytest
 langchain-astradb
 langchain-huggingface
