@@ -33,8 +33,7 @@ async def explain_scheme(schema_dict: dict, documents: Optional[str] = None) -> 
 
         query = reshaped_metadata["scheme_name"].strip() or metadata_obj.model_dump_json()
 
-        # DEBUG: confirm we're using 'chunks'
-        logger.debug(f"About to call retriever with collection_type='chunks' and query='{query}'")
+        logger.debug(f"[Explainer] Calling retriever with query: '{query}' | Collection: 'chunks'")
 
         async with Client(RETRIEVER_URL) as retriever_client:
             response = await retriever_client.call_tool(
@@ -46,21 +45,22 @@ async def explain_scheme(schema_dict: dict, documents: Optional[str] = None) -> 
                 }
             )
 
-        try:
-            docs = response.data.output
-        except AttributeError:
-            docs = getattr(response.data, "output", [])
+        logger.debug(f"[Explainer] Raw retriever response: {response}")
+        logger.warning(f"[Explainer] response.data → {response.data} (type={type(response.data)})")
 
+        docs = response.data.result
         if not isinstance(docs, list):
-            logger.warning("Retrieved documents were not a list; resetting to []")
+            logger.warning("[Explainer] Retrieved documents were not a list; resetting to []")
             docs = []
+        
+        for d in docs:
+            logger.debug(f"[Explainer] Raw doc object: {d} | type={type(d)} | keys={vars(d).keys()}")
 
-        logger.info(f"Retrieved {len(docs)} documents from 'Scheme_chunks'.")
+        logger.info(f"[Explainer] Retrieved {len(docs)} documents from 'Scheme_chunks'.")
 
-        combined_content = "\n\n".join(
-            doc.get("content", "") for doc in docs if isinstance(doc, dict)
-        )
-        logger.info(f"Combined document content length: {len(combined_content)}")
+        doc_dicts = [vars(d) for d in docs]
+        combined_content = "\n\n".join(doc.get("content", "") for doc in doc_dicts)
+        logger.info(f"[Explainer] Combined content length: {len(combined_content)}")
 
         result = scheme_explainer.explain_scheme(
             scheme_metadata=metadata_obj,
@@ -71,6 +71,7 @@ async def explain_scheme(schema_dict: dict, documents: Optional[str] = None) -> 
     except Exception as e:
         logger.error("Failed to explain scheme", exc_info=True)
         raise UdayamitraException("Failed to explain scheme", sys)
+
 
 if __name__ == "__main__":
     tool_info = generate_tool_registry_entry()

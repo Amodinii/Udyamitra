@@ -67,3 +67,11 @@ class EligibilityCheckResponse(BaseModel):
     missing_fields: Optional[List[str]] = None  # What else we need to decide
     suggestions: Optional[List[str]] = None  # Follow-up steps (maybe registration)
     sources: Optional[List[str]] = None  # Where the rule came from
+
+# Scheme Retriever
+class RetrievedDoc(BaseModel):
+    content: str
+    metadata: Optional[dict] = {}
+
+class RetrieverOutput(BaseModel):
+    result: List[RetrievedDoc]
