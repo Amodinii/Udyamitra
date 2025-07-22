@@ -49,7 +49,6 @@ class SchemeExplainer:
                 - Use simple and direct language.
                 - Respond only in JSON format, matching the given schema exactly.
             """
-
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
             validated_response = SchemeExplanationResponse(**raw_response)
             return validated_response
