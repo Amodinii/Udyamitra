@@ -1,0 +1,18 @@
+{
+    "scheme_name": "PMEGP",
+    "user_profile": {
+        "user_type": "woman-entrepreneur",
+        "location": {
+        "raw": "Maharashtra",
+        "state": "Maharashtra",
+        "city": null,
+        "country": "India"
+        }
+    },
+    "context_entities": {
+        "target_group": "women entrepreneurs",
+        "location": "Maharashtra"
+    },
+    "detected_intents": ["explain", "list_benefits"],
+    "query": "Can you explain the benefits of the PMEGP scheme for women entrepreneurs in Maharashtra?"
+}
