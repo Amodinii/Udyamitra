@@ -1,47 +1,34 @@
-import json
-import asyncio
-from utility.ToolExecutor import run_plan
+from utility.ModelResolver import ModelResolver
+from pydantic import BaseModel, ValidationError
 
-# Sample Execution Plan
-example_plan = {
-    "execution_type": "sequential",
-    "tasks": [
-        {
-            "tool": "SchemeExplainer",
-            "input": {
-                "scheme": ["Karnataka ESDM subsidy", "SPECS scheme"]
-            },
-            "input_from": None
-        },
-        {
-            "tool": "EligibilityChecker",
-            "input": {
-                "scheme": ["Karnataka ESDM subsidy", "SPECS scheme"],
-                "user_profile": {
-                    "user_type": "woman_entrepreneur",
-                    "location": {
-                        "state": "Karnataka",
-                        "country": "India"
-                    }
-                }
-            },
-            "input_from": "SchemeExplainer"
-        }
-    ]
-}
+def test_model_resolution():
+    print("Testing ModelResolver...")
+    resolver = ModelResolver("utility.model")
 
-async def main():
+    # Test valid model resolution
     try:
-        results = await run_plan(example_plan)
-        print("\nExecution Results:")
-        print(json.dumps(results, indent=2))
-
-        # writing the output in the file
-        with open("output.json", "w") as f:
-            json.dump(results, f, indent=2)
-        
+        print("Testing a valid model...")
+        model_class = resolver.resolve("SchemeMetadata")
+        print(f"Resolved class: {model_class.__name__}")
+        assert issubclass(model_class, BaseModel)
     except Exception as e:
-        print(f"\nError during plan execution: {e}")
+        print(f"Failed to resolve valid model: {e}")
+
+    # Test invalid class name
+    try:
+        print("Testing an invalid model...")
+        resolver.resolve("NonExistentModel")
+    except ValueError as ve:
+        print(f"Caught expected error for invalid class: {ve}")
+    else:
+        print("Did not raise error for invalid class name")
+
+    # Test list_models
+    models = resolver.list_models()
+    print("Available models in module:")
+    for m in models:
+        print(f" - {m}")
+    assert isinstance(models, list) and len(models) > 0
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    test_model_resolution()
