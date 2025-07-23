@@ -1,3 +1,46 @@
+User Query:
+Is my small PCB assembly unit in Mysore eligible for PLI? Or is it only for big companies?
+
+Extracted Metadata:
+{
+  "query": "Is my small PCB assembly unit in Mysore eligible for PLI? Or is it only for big companies?",
+  "intents": [
+    "check_eligibility"
+  ],
+  "tools_required": [
+    "EligibilityChecker"
+  ],
+  "entities": {
+    "scheme": "PLI"
+  },
+  "user_profile": {
+    "user_type": "entrepreneur",
+    "location": {
+      "raw": "mysore",
+      "city": "Mysuru",
+      "state": "Karnataka",
+      "country": "India"
+    }
+  }
+}
+
+Execution Plan:
+{
+  "execution_type": "sequential",
+  "task_list": [
+    {
+      "tool_name": "EligibilityChecker",
+      "input": {
+        "scheme": "PLI",
+        "location": "Mysuru",
+        "user_type": "entrepreneur"
+      },
+      "input_from": null
+    }
+  ]
+}
+
+Execution Results:
 {
   "EligibilityChecker": {
     "tool": "EligibilityChecker",
@@ -17,3 +60,4 @@
     }
   }
 }
+

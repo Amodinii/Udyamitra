@@ -113,25 +113,11 @@ class ToolExecutor:
 
 
 # Final run function
-async def run_plan(plan_dict: dict) -> Dict[str, Any]:
+async def run_plan(plan: ExecutionPlan) -> Dict[str, Any]:
     """
     Takes raw plan dict, converts to ExecutionPlan model, and runs it.
     """
     try:
-        tasks = []
-        for t in plan_dict.get("tasks", []):
-            task = ToolTask(
-                tool_name=t["tool"],
-                input=t.get("input", {}),
-                input_from=t.get("input_from")
-            )
-            tasks.append(task)
-
-        plan = ExecutionPlan(
-            execution_type=plan_dict.get("execution_type", "sequential"),
-            task_list=tasks
-        )
-
         executor = ToolExecutor()
         return await executor.run_execution_plan(plan)
 
