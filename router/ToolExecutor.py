@@ -11,7 +11,7 @@ from utility.model import ExecutionPlan, ToolTask, ToolRegistryEntry
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import load_registry_from_file
-
+from utility.input_schema_generator import generate_tool_input  # ✅ imported
 
 class ToolExecutor:
     def __init__(self):
@@ -91,6 +91,15 @@ class ToolExecutor:
                     required_inputs = await self.get_required_inputs(session, task.tool_name)
                     input_data = self._resolve_input(task, results)
                     full_input = self._prompt_for_missing_inputs(required_inputs["required_input"], input_data, task.tool_name)
+
+                    # Input schema validation added here
+                    try:
+                        schema_name = self.tool_registry[task.tool_name].input_schema
+                        validated = generate_tool_input(full_input, schema_name)
+                        full_input = validated.dict()
+                    except Exception as e:
+                        logger.error(f"Schema validation failed for tool '{task.tool_name}': {e}")
+                        raise
 
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
                     response = await session.call_tool(required_inputs["server_Tool"], full_input)

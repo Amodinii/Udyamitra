@@ -40,24 +40,6 @@ Execution Plan:
   ]
 }
 
-Execution Results:
-{
-  "EligibilityChecker": {
-    "tool": "EligibilityChecker",
-    "output_text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"business_type\",\n    \"investment_details\",\n    \"employment_numbers\"\n  ],\n  \"suggestions\": [\n    \"Provide business type details, investment made, and employment numbers\"\n  ],\n  \"sources\": []\n}",
-    "raw_output": {
-      "meta": null,
-      "content": [
-        {
-          "type": "text",
-          "text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"business_type\",\n    \"investment_details\",\n    \"employment_numbers\"\n  ],\n  \"suggestions\": [\n    \"Provide business type details, investment made, and employment numbers\"\n  ],\n  \"sources\": []\n}",
-          "annotations": null,
-          "meta": null
-        }
-      ],
-      "structuredContent": null,
-      "isError": false
-    }
-  }
-}
+Exception:
+'ToolTask' object has no attribute 'input_schema'
 
