@@ -1,13 +1,13 @@
 {
   "EligibilityChecker": {
     "tool": "EligibilityChecker",
-    "output_text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"business_type\",\n    \"investment_details\",\n    \"employment_numbers\"\n  ],\n  \"suggestions\": [\n    \"Provide business type details, investment made, and employment numbers\"\n  ],\n  \"sources\": []\n}",
+    "output_text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
     "raw_output": {
       "meta": null,
       "content": [
         {
           "type": "text",
-          "text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [],\n  \"missing_fields\": [\n    \"business_type\",\n    \"investment_details\",\n    \"employment_numbers\"\n  ],\n  \"suggestions\": [\n    \"Provide business type details, investment made, and employment numbers\"\n  ],\n  \"sources\": []\n}",
+          "text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
           "annotations": null,
           "meta": null
         }
