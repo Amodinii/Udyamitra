@@ -32,14 +32,36 @@ Execution Plan:
       "tool_name": "EligibilityChecker",
       "input": {
         "scheme": "PLI",
-        "location": "Mysuru",
-        "user_type": "entrepreneur"
+        "unit_size": "small",
+        "location": {
+          "city": "Mysuru",
+          "state": "Karnataka",
+          "country": "India"
+        }
       },
       "input_from": null
     }
   ]
 }
 
-Exception:
-'ToolTask' object has no attribute 'input_schema'
+Execution Results:
+{
+  "EligibilityChecker": {
+    "tool": "EligibilityChecker",
+    "output_text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
+    "raw_output": {
+      "meta": null,
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "structuredContent": null,
+      "isError": false
+    }
+  }
+}
 

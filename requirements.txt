@@ -12,6 +12,7 @@ PyPDF2
 unstructured
 mcp
 httpx
+fastmcp
 fastapi
 uvicorn
 pytest
