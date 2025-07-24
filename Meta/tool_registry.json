@@ -22,8 +22,8 @@
       "fetch"
     ],
     "endpoint": "http://127.0.0.1:10000/retrieve-scheme/mcp/",
-    "input_schema": "RetrieveQuery",
-    "output_schema": "List[Dict]",
+    "input_schema": "RetrievedDoc",
+    "output_schema": "RetriverOutput",
     "model": "AstraDB + Groq Embedding",
     "description": "Retrieves scheme metadata and content"
   },

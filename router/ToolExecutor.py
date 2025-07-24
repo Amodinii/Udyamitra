@@ -2,12 +2,14 @@ import sys
 import json
 import asyncio
 from typing import Dict, Any
+from pydantic import BaseModel
 from contextlib import asynccontextmanager
-
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from utility.model import ExecutionPlan, ToolTask, ToolRegistryEntry
+from router.ModelResolver import ModelResolver
+from router.SchemaGenerator import SchemaGenerator
+from utility.model import ExecutionPlan, ToolTask, ToolRegistryEntry, Metadata
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import load_registry_from_file
@@ -20,9 +22,23 @@ class ToolExecutor:
             self.tool_registry: Dict[str, ToolRegistryEntry] = load_registry_from_file()
             if not self.tool_registry:
                 raise UdayamitraException("Tool registry is empty. Ensure tools are registered properly.", sys)
+            self.resolver = ModelResolver("utility.model")
+            self.schema_generator = SchemaGenerator()
+            logger.info("ToolExecutor initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ToolExecutor: {e}")
             raise UdayamitraException("Failed to initialize ToolExecutor", sys)
+
+    def _get_schema(self, tool_schema_name: str):
+        try:
+            logger.info(f"Resolving schema: {tool_schema_name}")
+            model_class = self.resolver.resolve(tool_schema_name)
+            logger.info(f"Resolved class: {model_class.__name__}")
+            assert issubclass(model_class, BaseModel)
+            return model_class  # ✅ MUST return the resolved class
+        except Exception as e:
+            logger.error(f"Failed to resolve schema: {e}")
+            raise UdayamitraException(f"Failed to resolve schema: {e}", sys)
 
     @asynccontextmanager
     async def connect_to_server_for_tool(self, tool_name: str):
@@ -65,36 +81,41 @@ class ToolExecutor:
             }
         return task.input
 
-    def _prompt_for_missing_inputs(self, required_keys: list, provided_input: dict, tool_name: str) -> dict:
-        for input_name in required_keys:
-            if input_name not in provided_input:
-                logger.warning(f"Missing required input '{input_name}'. Prompting user...")
-                user_input = input(f"\nInput required for tool '{tool_name}': please enter value for '{input_name}': ")
-                try:
-                    provided_input[input_name] = json.loads(user_input)
-                except json.JSONDecodeError:
-                    provided_input[input_name] = user_input
-        return provided_input
-
-    async def run_execution_plan(self, plan: ExecutionPlan) -> Dict[str, Any]:
+    async def run_execution_plan(self, plan: ExecutionPlan, metadata: Metadata) -> Dict[str, Any]:
         """
         Executes the given execution plan (only sequential supported).
         """
         results: Dict[str, Any] = {}
-
         if plan.execution_type != "sequential":
             raise UdayamitraException(f"Execution type '{plan.execution_type}' not supported yet.", sys)
 
         for task in plan.task_list:
             async with self.connect_to_server_for_tool(task.tool_name) as session:
                 try:
+                    # 1. Discover tool and get server-side required input
                     required_inputs = await self.get_required_inputs(session, task.tool_name)
+
+                    # 2. Resolve inputs from metadata or previous outputs
                     input_data = self._resolve_input(task, results)
-                    full_input = self._prompt_for_missing_inputs(required_inputs["required_input"], input_data, task.tool_name)
 
+                    # 3. Resolve Pydantic model class
+                    schema_class = self._get_schema(self.tool_registry[task.tool_name].input_schema)
+
+                    # 4. Generate final validated input using LLM
+                    full_input = self.schema_generator.generate_instance(
+                        metadata=metadata.model_dump(),
+                        execution_plan=plan.model_dump(),
+                        model_class=schema_class,
+                        user_input=input_data
+                    ) 
+                    print(f"full_input: {full_input}")
+                    print(f"full input type {type(full_input)}")
+                    # 5. Call the actual tool
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
-                    response = await session.call_tool(required_inputs["server_Tool"], full_input)
+                    wrapped_input = {"schema_dict": full_input.model_dump()}
+                    response = await session.call_tool(required_inputs["server_Tool"], wrapped_input)
 
+                    # 6. Handle response
                     logger.info(f"Tool '{task.tool_name}' executed successfully.")
                     output_text = None
                     if hasattr(response, "content") and response.content:
@@ -105,22 +126,9 @@ class ToolExecutor:
                         "output_text": output_text,
                         "raw_output": response.model_dump() if hasattr(response, "model_dump") else str(response),
                     }
+
                 except Exception as e:
                     logger.error(f"Error calling tool '{task.tool_name}': {e}")
                     results[task.tool_name] = {"tool": task.tool_name, "error": str(e)}
 
         return results
-
-
-# Final run function
-async def run_plan(plan: ExecutionPlan) -> Dict[str, Any]:
-    """
-    Takes raw plan dict, converts to ExecutionPlan model, and runs it.
-    """
-    try:
-        executor = ToolExecutor()
-        return await executor.run_execution_plan(plan)
-
-    except Exception as e:
-        logger.error(f"Failed to run plan: {e}")
-        raise
