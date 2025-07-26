@@ -7,6 +7,7 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
 from utility.model import EligibilityCheckRequest, EligibilityCheckResponse
+from .QuestionGenerator import QuestionGenerator
 
 class EligibilityChecker:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
@@ -60,8 +61,20 @@ class EligibilityChecker:
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
             validated = EligibilityCheckResponse(**raw_response)
+            if validated.eligible is None and validated.missing_fields:
+                question_generator = QuestionGenerator()
+                follow_ups = question_generator.generate_questions(
+                    missing_fields=validated.missing_fields,
+                    scheme_name=validated.scheme_name
+                )
+                return {
+                    "status": "incomplete",
+                    "scheme_name": validated.scheme_name,
+                    "missing_fields": validated.missing_fields,
+                    "follow_up_questions": follow_ups
+                }
             return validated
-
+        
         except Exception as e:
             logger.error(f"EligibilityChecker failed: {e}")
             raise UdayamitraException("Failed to check eligibility", sys)
