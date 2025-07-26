@@ -9,25 +9,28 @@ async function startPipeline(userQuery) {
     body: JSON.stringify({ user_query: userQuery })
   });
 
-  console.log(`Response: ${res}`);
+  const data = await res.json(); // Read JSON once
+
   if (!res.ok) {
-    const data = await res.json();
     throw new Error(data.detail || 'Pipeline start failed');
   }
 
-  return await res.json();
+  console.log(data); // Log parsed JSON
+  return data;
 }
 
 // Poll the pipeline status 
 async function getPipelineStatus() {
   const res = await fetch(BASE_URL + '/status');
 
+  const data = await res.json(); // Read JSON once
+
   if (!res.ok) {
-    const data = await res.json();
     throw new Error(data.detail || 'Status fetch failed');
   }
 
-  return await res.json();
+  console.log(data); // Log parsed JSON
+  return data;
 }
 
 export default {
