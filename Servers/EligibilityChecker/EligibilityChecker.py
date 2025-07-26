@@ -7,7 +7,7 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
 from utility.model import EligibilityCheckRequest, EligibilityCheckResponse
-from .QuestionGenerator import QuestionGenerator
+from .QuestionGenerator import QuestionGenerator  
 
 class EligibilityChecker:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
@@ -15,11 +15,17 @@ class EligibilityChecker:
             logger.info("Starting EligibilityChecker...")
             logger.info(f"Initializing EligibilityChecker with model: {model}")
             self.llm_client = LLMClient(model=model)
+            self.question_generator = QuestionGenerator(model=model)
         except Exception as e:
             logger.error(f"Failed to initialize EligibilityChecker: {e}")
             raise UdayamitraException("Failed to initialize EligibilityChecker", sys)
 
-    def check_eligibility(self, request: EligibilityCheckRequest, retrieved_documents: str = None) -> EligibilityCheckResponse:
+    def check_eligibility(self, request: EligibilityCheckRequest, retrieved_documents: str = None) -> dict:
+        """
+        Returns:
+            - If complete: dict of `EligibilityCheckResponse`
+            - If missing fields: dict with `eligibility` + `follow_up_questions`
+        """
         try:
             system_prompt = """
                 You are a strict and detail-oriented assistant that checks whether a user is eligible for an Indian government scheme.
@@ -60,21 +66,22 @@ class EligibilityChecker:
             """
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
-            validated = EligibilityCheckResponse(**raw_response)
-            if validated.eligible is None and validated.missing_fields:
-                question_generator = QuestionGenerator()
-                follow_ups = question_generator.generate_questions(
-                    missing_fields=validated.missing_fields,
-                    scheme_name=validated.scheme_name
+            eligibility = EligibilityCheckResponse(**raw_response)
+
+            # If eligibility is uncertain, generate follow-up questions
+            if eligibility.eligible is None and eligibility.missing_fields:
+                follow_ups = self.question_generator.generate_questions(
+                    missing_fields=eligibility.missing_fields,
+                    scheme_name=eligibility.scheme_name
                 )
+
                 return {
-                    "status": "incomplete",
-                    "scheme_name": validated.scheme_name,
-                    "missing_fields": validated.missing_fields,
+                    "eligibility": eligibility.model_dump(),
                     "follow_up_questions": follow_ups
                 }
-            return validated
-        
+
+            return eligibility.model_dump()
+
         except Exception as e:
             logger.error(f"EligibilityChecker failed: {e}")
             raise UdayamitraException("Failed to check eligibility", sys)

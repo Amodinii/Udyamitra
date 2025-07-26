@@ -1,24 +1,20 @@
 User Query:
-Are there any specific schemes that support energy efficiency upgrades in electronics manufacturing units, like switching to solar or smart HVAC?
+Am I eligible for PLI 2.0?
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "Are there any specific schemes that support energy efficiency upgrades in electronics manufacturing units, like switching to solar or smart HVAC?",
+  "query": "Am I eligible for PLI 2.0?",
   "intents": [
-    "check_eligibility",
-    "explain"
+    "check_eligibility"
   ],
   "tools_required": [
-    "EligibilityChecker",
-    "SchemeExplainer"
+    "EligibilityChecker"
   ],
   "entities": {
-    "scheme": [
-      "energy_efficiency_schemes"
-    ]
+    "scheme": "PLI2.0"
   },
   "user_profile": {
     "user_type": "entrepreneur",
@@ -41,19 +37,11 @@ Execution Plan:
     {
       "tool_name": "EligibilityChecker",
       "input": {
+        "scheme": "PLI2.0",
         "user_type": "entrepreneur",
-        "location": "India",
-        "scheme_type": "energy_efficiency_schemes"
+        "location": "India"
       },
       "input_from": null
-    },
-    {
-      "tool_name": "SchemeExplainer",
-      "input": {
-        "scheme_type": "energy_efficiency_schemes",
-        "eligible": true
-      },
-      "input_from": "EligibilityChecker"
     }
   ]
 }
@@ -65,36 +53,19 @@ Execution Results:
 {
   "EligibilityChecker": {
     "tool": "EligibilityChecker",
-    "output_text": "{\n  \"scheme_name\": \"energy_efficiency_schemes\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"specific industry or type of electronics manufacturing unit\",\n    \"details of energy efficiency upgrades\"\n  ],\n  \"suggestions\": [\n    \"Provide more details about the electronics manufacturing unit\",\n    \"Specify the energy efficiency upgrades planned\"\n  ],\n  \"sources\": [\n    \"Scheme Guidelines issued by Ministry of Electronics and Information Technology\"\n  ]\n}",
+    "output_text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
     "raw_output": {
       "meta": null,
       "content": [
         {
           "type": "text",
-          "text": "{\n  \"scheme_name\": \"energy_efficiency_schemes\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"specific industry or type of electronics manufacturing unit\",\n    \"details of energy efficiency upgrades\"\n  ],\n  \"suggestions\": [\n    \"Provide more details about the electronics manufacturing unit\",\n    \"Specify the energy efficiency upgrades planned\"\n  ],\n  \"sources\": [\n    \"Scheme Guidelines issued by Ministry of Electronics and Information Technology\"\n  ]\n}",
+          "text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
           "annotations": null,
           "meta": null
         }
       ],
       "structuredContent": null,
       "isError": false
-    }
-  },
-  "SchemeExplainer": {
-    "tool": "SchemeExplainer",
-    "output_text": "Error executing tool explain_scheme: Error occurred while running the python script, in file [D:\\Codes\\Udyamitra\\Servers\\SchemeExplainer\\server.py], line [39]. \nError Message: [Failed to explain scheme]",
-    "raw_output": {
-      "meta": null,
-      "content": [
-        {
-          "type": "text",
-          "text": "Error executing tool explain_scheme: Error occurred while running the python script, in file [D:\\Codes\\Udyamitra\\Servers\\SchemeExplainer\\server.py], line [39]. \nError Message: [Failed to explain scheme]",
-          "annotations": null,
-          "meta": null
-        }
-      ],
-      "structuredContent": null,
-      "isError": true
     }
   }
 }
