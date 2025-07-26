@@ -11,6 +11,16 @@ class QuestionGenerator:
         Scheme: {scheme_name or "Unknown"}
         Missing Fields: {', '.join(missing_fields)}
 
-        Write clear, simple questions for each field. Return only a list of strings.
+        Write clear, simple questions for each field.
+
+        Return a JSON object like:
+        {{
+            "questions": [
+                "Question 1?",
+                "Question 2?"
+            ]
+        }}
         """
-        return self.llm.run_json("Generate follow-up questions.", prompt)
+        response = self.llm.run_json("Generate follow-up questions.", prompt)
+        return response["questions"]
+
