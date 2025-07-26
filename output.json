@@ -1,19 +1,36 @@
 {
   "EligibilityChecker": {
     "tool": "EligibilityChecker",
-    "output_text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
+    "output_text": "{\n  \"scheme_name\": \"energy_efficiency_schemes\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"specific industry or type of electronics manufacturing unit\",\n    \"details of energy efficiency upgrades\"\n  ],\n  \"suggestions\": [\n    \"Provide more details about the electronics manufacturing unit\",\n    \"Specify the energy efficiency upgrades planned\"\n  ],\n  \"sources\": [\n    \"Scheme Guidelines issued by Ministry of Electronics and Information Technology\"\n  ]\n}",
     "raw_output": {
       "meta": null,
       "content": [
         {
           "type": "text",
-          "text": "{\n  \"scheme_name\": \"PLI\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"unit_size_verification\",\n    \"specific_products_manufactured\",\n    \"investment_details\"\n  ],\n  \"suggestions\": [\n    \"Provide details about your unit size and production capacity\",\n    \"Specify the products manufactured by your PCB assembly unit\"\n  ],\n  \"sources\": [\n    \"PLI Scheme Guidelines\"\n  ]\n}",
+          "text": "{\n  \"scheme_name\": \"energy_efficiency_schemes\",\n  \"eligible\": null,\n  \"reasons\": [\n    \"Insufficient information to determine eligibility\"\n  ],\n  \"missing_fields\": [\n    \"specific industry or type of electronics manufacturing unit\",\n    \"details of energy efficiency upgrades\"\n  ],\n  \"suggestions\": [\n    \"Provide more details about the electronics manufacturing unit\",\n    \"Specify the energy efficiency upgrades planned\"\n  ],\n  \"sources\": [\n    \"Scheme Guidelines issued by Ministry of Electronics and Information Technology\"\n  ]\n}",
           "annotations": null,
           "meta": null
         }
       ],
       "structuredContent": null,
       "isError": false
+    }
+  },
+  "SchemeExplainer": {
+    "tool": "SchemeExplainer",
+    "output_text": "Error executing tool explain_scheme: Error occurred while running the python script, in file [D:\\Codes\\Udyamitra\\Servers\\SchemeExplainer\\server.py], line [39]. \nError Message: [Failed to explain scheme]",
+    "raw_output": {
+      "meta": null,
+      "content": [
+        {
+          "type": "text",
+          "text": "Error executing tool explain_scheme: Error occurred while running the python script, in file [D:\\Codes\\Udyamitra\\Servers\\SchemeExplainer\\server.py], line [39]. \nError Message: [Failed to explain scheme]",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "structuredContent": null,
+      "isError": true
     }
   }
 }

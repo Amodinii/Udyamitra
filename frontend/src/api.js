@@ -1,44 +1,36 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-// Call to /intent
-async function getIntent(userQuery) {
-  const res = await fetch(BASE_URL + '/intent', {
+// Start the pipeline
+async function startPipeline(userQuery) {
+  console.log(`userQuery: ${userQuery}`);
+  const res = await fetch(BASE_URL + '/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_query: userQuery })
   });
 
+  console.log(`Response: ${res}`);
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.detail || 'Intent fetch failed');
+    throw new Error(data.detail || 'Pipeline start failed');
   }
 
   return await res.json();
 }
 
-// Call to /run
-async function runTool({ user_query, user_inputs, tool_name, server_path, server_sources }) {
-  const res = await fetch(BASE_URL + '/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_query,
-      user_inputs,
-      tool_name,
-      server_path,
-      server_sources
-    })
-  });
+// Poll the pipeline status 
+async function getPipelineStatus() {
+  const res = await fetch(BASE_URL + '/status');
 
   if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.detail || 'Tool run failed');
+    throw new Error(data.detail || 'Status fetch failed');
   }
 
   return await res.json();
 }
 
 export default {
-  getIntent,
-  runTool
+  startPipeline,
+  getPipelineStatus
 };
