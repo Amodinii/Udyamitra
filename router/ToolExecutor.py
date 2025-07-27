@@ -35,7 +35,7 @@ class ToolExecutor:
             model_class = self.resolver.resolve(tool_schema_name)
             logger.info(f"Resolved class: {model_class.__name__}")
             assert issubclass(model_class, BaseModel)
-            return model_class  # ✅ MUST return the resolved class
+            return model_class  # MUST return the resolved class
         except Exception as e:
             logger.error(f"Failed to resolve schema: {e}")
             raise UdayamitraException(f"Failed to resolve schema: {e}", sys)
@@ -107,23 +107,29 @@ class ToolExecutor:
                         execution_plan=plan.model_dump(),
                         model_class=schema_class,
                         user_input=input_data
-                    ) 
+                    )
                     print(f"full_input: {full_input}")
                     print(f"full input type {type(full_input)}")
+
                     # 5. Call the actual tool
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
                     wrapped_input = {"schema_dict": full_input.model_dump()}
                     response = await session.call_tool(required_inputs["server_Tool"], wrapped_input)
 
-                    # 6. Handle response
-                    logger.info(f"Tool '{task.tool_name}' executed successfully.")
-                    output_text = None
+                    # 6. Updated response handling
+                    parsed_output = {}
                     if hasattr(response, "content") and response.content:
-                        output_text = response.content[0].text
+                        try:
+                            parsed_output = json.loads(response.content[0].text)
+                        except Exception as e:
+                            logger.warning(f"Failed to parse response as JSON. Using raw text: {e}")
+                            parsed_output = {"output_text": response.content[0].text}
 
                     results[task.tool_name] = {
                         "tool": task.tool_name,
-                        "output_text": output_text,
+                        "output_text": parsed_output.get("output_text") or parsed_output.get("explanation"),
+                        "eligibility": parsed_output.get("eligibility"),
+                        "follow_up_questions": parsed_output.get("follow_up_questions"),
                         "raw_output": response.model_dump() if hasattr(response, "model_dump") else str(response),
                     }
 
