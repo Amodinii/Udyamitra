@@ -1,12 +1,12 @@
 User Query:
-Am I eligible for PLI 2.0?
+Am I elgible for PLI 2.0?
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "Am I eligible for PLI 2.0?",
+  "query": "Am I elgible for PLI 2.0?",
   "intents": [
     "check_eligibility"
   ],
@@ -51,46 +51,7 @@ Running execution plan with tool executor...
 
 Execution Results:
 {
-  "EligibilityChecker": {
-    "tool": "EligibilityChecker",
-    "output_text": "**Eligibility Result for PLI2.0 Scheme: Not Determined**\n\nWe were unable to determine your eligibility for the PLI2.0 scheme due to insufficient information. \n\n**Missing Information:**\n\n1. Investment thresholds: We don't know the minimum investment required for the scheme.\n2. Net incremental sales: We don't have information on the expected increase in sales resulting from the investment.\n3. User type details: We need to know the type of entity you represent (e.g., manufacturer, MSME, large enterprise, Global/Hybrid/Domestic company).\n\n**Suggestions to Move Forward:**\n\nTo assess your eligibility, please provide details about your company type and investment plans.\n\n**Next Steps:**\n\nTo proceed, we need answers to the following questions:\n1. What are the minimum investment thresholds required for the PLI2.0 scheme?\n2. What are the expected net incremental sales as a result of the investment under the PLI2.0 scheme?\n3. Could you please specify the type of user or entity you represent?\n\nThe information is based on the guidelines outlined in THE GAZETTE OF INDIA : EXTRAORDINARY.",
-    "eligibility": {
-      "scheme_name": "PLI2.0",
-      "eligible": null,
-      "reasons": [
-        "Insufficient information to determine eligibility"
-      ],
-      "missing_fields": [
-        "investment_thresholds",
-        "net_incremental_sales",
-        "user_type_details"
-      ],
-      "suggestions": [
-        "Provide details about your company type (Global/Hybrid/Domestic) and investment plans"
-      ],
-      "sources": [
-        "THE GAZETTE OF INDIA : EXTRAORDINARY"
-      ]
-    },
-    "follow_up_questions": [
-      "What are the minimum investment thresholds required for the PLI2.0 scheme?",
-      "What are the expected net incremental sales as a result of the investment under the PLI2.0 scheme?",
-      "Could you please specify the type of user or entity you represent (e.g., manufacturer, MSME, large enterprise)?"
-    ],
-    "raw_output": {
-      "meta": null,
-      "content": [
-        {
-          "type": "text",
-          "text": "{\n  \"output_text\": \"**Eligibility Result for PLI2.0 Scheme: Not Determined**\\n\\nWe were unable to determine your eligibility for the PLI2.0 scheme due to insufficient information. \\n\\n**Missing Information:**\\n\\n1. Investment thresholds: We don't know the minimum investment required for the scheme.\\n2. Net incremental sales: We don't have information on the expected increase in sales resulting from the investment.\\n3. User type details: We need to know the type of entity you represent (e.g., manufacturer, MSME, large enterprise, Global/Hybrid/Domestic company).\\n\\n**Suggestions to Move Forward:**\\n\\nTo assess your eligibility, please provide details about your company type and investment plans.\\n\\n**Next Steps:**\\n\\nTo proceed, we need answers to the following questions:\\n1. What are the minimum investment thresholds required for the PLI2.0 scheme?\\n2. What are the expected net incremental sales as a result of the investment under the PLI2.0 scheme?\\n3. Could you please specify the type of user or entity you represent?\\n\\nThe information is based on the guidelines outlined in THE GAZETTE OF INDIA : EXTRAORDINARY.\",\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"investment_thresholds\",\n      \"net_incremental_sales\",\n      \"user_type_details\"\n    ],\n    \"suggestions\": [\n      \"Provide details about your company type (Global/Hybrid/Domestic) and investment plans\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"What are the minimum investment thresholds required for the PLI2.0 scheme?\",\n    \"What are the expected net incremental sales as a result of the investment under the PLI2.0 scheme?\",\n    \"Could you please specify the type of user or entity you represent (e.g., manufacturer, MSME, large enterprise)?\"\n  ]\n}",
-          "annotations": null,
-          "meta": null
-        }
-      ],
-      "structuredContent": null,
-      "isError": false
-    }
-  }
+  "EligibilityChecker": "**Eligibility for PLI2.0 Scheme: Not Determined**\n\nWe are unable to determine your eligibility for the PLI2.0 scheme at this time.\n\n**Why is your eligibility undetermined?**\n\nThe information provided is insufficient to assess your eligibility. Specifically, we need more details about:\n\n1. Your user type (individual entrepreneur, company, or existing industrial unit)\n2. Your investment plans and thresholds\n3. Your company type (Global, Hybrid, or Domestic)\n\n**What can you do next?**\n\nTo proceed, please provide more information about your company type and investment plans. We recommend answering the following questions:\n\n1. Are you an individual entrepreneur, a company, or an existing industrial unit?\n2. What is the total investment you are planning to make in the scheme?\n3. Is your company Global, Hybrid (with both domestic and global operations), or purely Domestic?\n\nOur assessment is based on the guidelines outlined in \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\". Once we receive the necessary information, we will be able to determine your eligibility for the PLI2.0 scheme.\n\nTo continue, please answer:\nAre you an individual entrepreneur, a company, or an existing industrial unit?"
 }
 
 COMPLETED:

@@ -1,7 +1,7 @@
 import sys
 import json
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from mcp import ClientSession
@@ -81,9 +81,11 @@ class ToolExecutor:
             }
         return task.input
 
-    async def run_execution_plan(self, plan: ExecutionPlan, metadata: Metadata) -> Dict[str, Any]:
+    async def run_execution_plan(self, plan: ExecutionPlan, metadata: Metadata,flatten_output: bool = False) -> Union[str, Dict[str, Any]]:
         """
         Executes the given execution plan (only sequential supported).
+        If `flatten_output=True` and only one task, returns its cleaned string directly.
+        Otherwise returns a dict of tool_name → cleaned string.
         """
         results: Dict[str, Any] = {}
         if plan.execution_type != "sequential":
@@ -92,49 +94,60 @@ class ToolExecutor:
         for task in plan.task_list:
             async with self.connect_to_server_for_tool(task.tool_name) as session:
                 try:
-                    # 1. Discover tool and get server-side required input
                     required_inputs = await self.get_required_inputs(session, task.tool_name)
-
-                    # 2. Resolve inputs from metadata or previous outputs
                     input_data = self._resolve_input(task, results)
-
-                    # 3. Resolve Pydantic model class
                     schema_class = self._get_schema(self.tool_registry[task.tool_name].input_schema)
 
-                    # 4. Generate final validated input using LLM
                     full_input = self.schema_generator.generate_instance(
                         metadata=metadata.model_dump(),
                         execution_plan=plan.model_dump(),
                         model_class=schema_class,
                         user_input=input_data
                     )
-                    print(f"full_input: {full_input}")
-                    print(f"full input type {type(full_input)}")
 
-                    # 5. Call the actual tool
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
                     wrapped_input = {"schema_dict": full_input.model_dump()}
                     response = await session.call_tool(required_inputs["server_Tool"], wrapped_input)
 
-                    # 6. Updated response handling
-                    parsed_output = {}
+                    # Parse JSON or fallback to raw text
+                    parsed = {}
                     if hasattr(response, "content") and response.content:
                         try:
-                            parsed_output = json.loads(response.content[0].text)
-                        except Exception as e:
-                            logger.warning(f"Failed to parse response as JSON. Using raw text: {e}")
-                            parsed_output = {"output_text": response.content[0].text}
+                            parsed = json.loads(response.content[0].text)
+                        except Exception:
+                            parsed = {"output_text": response.content[0].text}
 
-                    results[task.tool_name] = {
-                        "tool": task.tool_name,
-                        "output_text": parsed_output.get("output_text") or parsed_output.get("explanation"),
-                        "eligibility": parsed_output.get("eligibility"),
-                        "follow_up_questions": parsed_output.get("follow_up_questions"),
-                        "raw_output": response.model_dump() if hasattr(response, "model_dump") else str(response),
-                    }
+                    # Build cleaned explanation
+                    explanation = parsed.get("explanation") or parsed.get("output_text") or ""
+                    explanation = explanation.strip().replace("\\n", "\n")
+
+                    if not explanation:
+                        eligibility = parsed.get("eligibility", {})
+                        status = (
+                            "Eligible" if eligibility.get("eligible") is True else
+                            "Not Eligible" if eligibility.get("eligible") is False else
+                            "Eligibility Not Determined"
+                        )
+                        scheme = eligibility.get("scheme_name", "the scheme")
+                        explanation = f"Eligibility for {scheme}: {status}."
+
+                    # Only ask the first follow‑up question, if any
+                    follow_ups = parsed.get("follow_up_questions", [])
+                    if follow_ups:
+                        explanation += f"\n\nTo continue, please answer:\n{follow_ups[0]}"
+
+                    results[task.tool_name] = explanation.encode().decode("unicode_escape").strip('"')
 
                 except Exception as e:
                     logger.error(f"Error calling tool '{task.tool_name}': {e}")
-                    results[task.tool_name] = {"tool": task.tool_name, "error": str(e)}
+                    results[task.tool_name] = f"Failed to process {task.tool_name}: {e}"
+
+        # Return only the explanation string if asked and there’s only one result
+        if flatten_output and len(results) == 1:
+            return next(iter(results.values()))
 
         return results
+
+
+
+
