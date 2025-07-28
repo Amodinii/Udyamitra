@@ -30,41 +30,57 @@ class EligibilityChecker:
         """
         try:
             system_prompt = """
-                You are a strict and detail-oriented assistant that checks whether a user is eligible for an Indian government scheme.
-                You are provided with user details, a target scheme, and optionally related scheme documents.
-                Your job is to evaluate if the user qualifies, and respond in strict JSON format as below:
-                {
-                    "scheme_name": "<same as input>",
-                    "eligible": true or false or null,
-                    "reasons": ["<reason 1>", "<reason 2>"],
-                    "missing_fields": ["<what data is missing>"],
-                    "suggestions": ["<follow-up questions or next steps>"],
-                    "sources": ["<any references used>"]
-                }
-                Do not add any other commentary or formatting. JSON only.
+            You are a strict and detail-oriented assistant that checks whether a user is eligible for an Indian government scheme.
+
+            Your job:
+            - You will receive a scheme name, user profile data, and optionally scheme-related documents.
+            - Your task is to evaluate the user's eligibility **based strictly on document content** (if provided), or fallback knowledge if not.
+
+            Your response **must** be a clean, valid JSON object with this exact structure:
+
+            {
+            "scheme_name": "<same as input>",
+            "eligible": true | false | null,
+            "reasons": ["<reason 1>", "<reason 2>"],
+            "missing_fields": ["<required user inputs that are missing>"],
+            "suggestions": ["<follow-up questions or next steps>"],
+            "sources": ["<source links or document references>"]
+            }
+
+            Important:
+            - Do NOT include any prose, markdown, explanations, or notes — JSON only.
+            - `eligible` must be `null` if required user data is incomplete.
+            - `reasons` must explain *why* the user is eligible/ineligible.
+            - `sources` must refer to documents or URLs if used.
+            - Be honest about uncertainty if information is missing.
+
+            If documents are provided, you MUST prioritize them over your own knowledge.
             """
 
             user_prompt = f"""
-                Scheme: {request.scheme_name}
-                User Profile:
-                {request.user_profile.model_dump_json(indent=2)}
+            Evaluate user eligibility for the following scheme.
 
-                Known Context (Entities):
-                {request.context_entities if request.context_entities else "{}"}
+            === SCHEME ===
+            {request.scheme_name}
 
-                Original Query:
-                {request.query or "Not provided"}
+            === USER PROFILE ===
+            {request.user_profile.model_dump_json(indent=2)}
 
-                Documents (if any):
-                {retrieved_documents if retrieved_documents else "None"}
+            === CONTEXT ENTITIES ===
+            {request.context_entities if request.context_entities else "{}"}
 
-                Instructions:
-                - If documents are present, use them to derive rules.
-                - If not, use general knowledge but admit uncertainty.
-                - If user data is missing to decide, set eligible to null and list what's missing.
-                - If user is eligible, mention exactly why.
-                - Same for ineligibility.
-                - Do not respond with anything except the required JSON.
+            === ORIGINAL USER QUERY ===
+            {request.query or "Not provided"}
+
+            === RETRIEVED DOCUMENTS ===
+            {retrieved_documents if retrieved_documents else "None"}
+
+            Instructions:
+            - Use the documents above as your **primary source** of rules and requirements.
+            - If documents are not present or are incomplete, fallback to general knowledge and clearly mention uncertainty.
+            - If you cannot determine eligibility, set "eligible": null and list what's missing.
+            - If eligible or ineligible, clearly explain the reasons based on rules.
+            - Output must strictly follow the JSON schema. No extra commentary.
             """
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
