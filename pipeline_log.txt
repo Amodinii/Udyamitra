@@ -1,12 +1,12 @@
 User Query:
-Am I eligible for PLI 2.0?
+Am I elgible for PLI 2.0?
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "Am I eligible for PLI 2.0?",
+  "query": "Am I elgible for PLI 2.0?",
   "intents": [
     "check_eligibility"
   ],
@@ -51,23 +51,7 @@ Running execution plan with tool executor...
 
 Execution Results:
 {
-  "EligibilityChecker": {
-    "tool": "EligibilityChecker",
-    "output_text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
-    "raw_output": {
-      "meta": null,
-      "content": [
-        {
-          "type": "text",
-          "text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
-          "annotations": null,
-          "meta": null
-        }
-      ],
-      "structuredContent": null,
-      "isError": false
-    }
-  }
+  "EligibilityChecker": "**Eligibility for PLI2.0 Scheme: Not Determined**\n\nWe are unable to determine your eligibility for the PLI2.0 scheme at this time.\n\n**Why is your eligibility undetermined?**\n\nThe information provided is insufficient to assess your eligibility. Specifically, we need more details about:\n\n1. Your user type (individual entrepreneur, company, or existing industrial unit)\n2. Your investment plans and thresholds\n3. Your company type (Global, Hybrid, or Domestic)\n\n**What can you do next?**\n\nTo proceed, please provide more information about your company type and investment plans. We recommend answering the following questions:\n\n1. Are you an individual entrepreneur, a company, or an existing industrial unit?\n2. What is the total investment you are planning to make in the scheme?\n3. Is your company Global, Hybrid (with both domestic and global operations), or purely Domestic?\n\nOur assessment is based on the guidelines outlined in \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\". Once we receive the necessary information, we will be able to determine your eligibility for the PLI2.0 scheme.\n\nTo continue, please answer:\nAre you an individual entrepreneur, a company, or an existing industrial unit?"
 }
 
 COMPLETED:

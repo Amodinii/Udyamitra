@@ -18,7 +18,7 @@ app.add_middleware(
 # Memory store for the pipeline
 pipeline_instance = None
 
-# ✅ Create request schema for the POST body
+# Create request schema for the POST body
 class StartRequest(BaseModel):
     user_query: str
 

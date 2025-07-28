@@ -42,3 +42,33 @@ class LLMClient:
         last_block = json_blocks[-1]
 
         return json.loads(last_block)
+    
+    def summarize_json_output(self, explanation_json: dict, context: str = None) -> str:
+        system_prompt = (
+            "You are a helpful assistant that explains structured eligibility results in clear, user-friendly language. "
+            "Highlight whether the user is eligible or not, and if not, explain why and what is missing."
+        )
+
+        user_message = f"""
+        Context: {context or "Eligibility check for a government scheme"}
+        JSON Response:
+        {explanation_json}
+
+        Write a clear, human-friendly summary of this information.
+        """
+
+        # Get raw response
+        response = self.run_chat(system_prompt, user_message)
+
+        # Extract just the final explanation string
+        if isinstance(response, dict):
+            if "content" in response:
+                # Groq-like format
+                text_parts = [c["text"] for c in response["content"] if c["type"] == "text"]
+                return "\n".join(text_parts).strip() if text_parts else str(response)
+            elif "text" in response:
+                return response["text"].strip()
+        elif isinstance(response, str):
+            return response.strip()
+
+        return str(response)
