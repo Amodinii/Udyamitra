@@ -31,15 +31,15 @@ async def explain_scheme(schema_dict: dict, documents: Optional[str] = None) -> 
         }
         metadata_obj = SchemeMetadata(**reshaped_metadata)
 
-        query = reshaped_metadata["scheme_name"].strip() or metadata_obj.model_dump_json()
-
+        query = reshaped_metadata["scheme_name"].strip() or metadata_obj.model_dump()
+        logger.info(f"[Explainer] Querying retriever with: '{query}', with type: {type(query)}")
         logger.debug(f"[Explainer] Calling retriever with query: '{query}' | Collection: 'chunks'")
 
         async with Client(RETRIEVER_URL) as retriever_client:
             response = await retriever_client.call_tool(
                 RETRIEVER_TOOL_NAME,
                 {
-                    "query": query,
+                    "query": query["query"],
                     "collection_type": "chunks",  
                     "top_k": 5
                 }

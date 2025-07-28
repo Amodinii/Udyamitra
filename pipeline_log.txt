@@ -1,14 +1,19 @@
 User Query:
-I am an individual.
+What are the eligibility criteria for the PLI2.0 scheme?
+
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "I am an individual.",
-  "intents": [],
-  "tools_required": [],
+  "query": "What are the eligibility criteria for the PLI2.0 scheme?",
+  "intents": [
+    "check_eligibility"
+  ],
+  "tools_required": [
+    "EligibilityChecker"
+  ],
   "entities": {
     "scheme": ""
   },
@@ -67,6 +72,10 @@ Execution Plan:
 EXECUTION:
 Running execution plan with tool executor...
 
-ERROR:
-Unexpected error: 'NoneType' object has no attribute 'tb_lineno'
+Execution Results:
+{
+  "EligibilityChecker": "Here's a simple explanation:\n\n## Eligibility Check Result for PLI2.0 Scheme\n\nThe eligibility check for the PLI2.0 scheme could not be determined due to insufficient information. \nThe missing information includes investment thresholds, net incremental sales generated, and the type of company.\n\nTo proceed, you need to provide investment details and specify your company type.\n\nThe information is based on \"THE GAZETTE OF INDIA : EXTRAORDINARY\".\n\n## Follow-up Questions\n1. What investment thresholds are you planning to meet for the PLI2.0 scheme?\n2. What are the net incremental sales you anticipate as a result of this investment?\n3. What type of company are you representing (e.g., MSME, Large Enterprise, etc.)?"
+}
 
+COMPLETED:
+Pipeline execution completed successfully.
