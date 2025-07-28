@@ -1,6 +1,7 @@
 User Query:
 What are the eligibility criteria for the PLI2.0 scheme?
 
+
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
@@ -14,10 +15,10 @@ Extracted Metadata:
     "EligibilityChecker"
   ],
   "entities": {
-    "scheme": "PLI2.0"
+    "scheme": ""
   },
   "user_profile": {
-    "user_type": "entrepreneur",
+    "user_type": "individual",
     "location": {
       "raw": "india",
       "city": null,
@@ -35,13 +36,35 @@ Execution Plan:
   "execution_type": "sequential",
   "task_list": [
     {
-      "tool_name": "EligibilityChecker",
+      "tool_name": "UserTypeValidator",
       "input": {
-        "scheme": "PLI2.0",
-        "user_type": "entrepreneur",
-        "location": "India"
+        "user_type": "individual"
       },
       "input_from": null
+    },
+    {
+      "tool_name": "LocationResolver",
+      "input": {
+        "location": "India"
+      },
+      "input_from": "UserTypeValidator"
+    },
+    {
+      "tool_name": "SchemeResolver",
+      "input": {
+        "scheme": ""
+      },
+      "input_from": "LocationResolver"
+    },
+    {
+      "tool_name": "QueryResponder",
+      "input": {
+        "query": "I am an individual.",
+        "user_type": "individual",
+        "location": "India",
+        "scheme": ""
+      },
+      "input_from": "SchemeResolver"
     }
   ]
 }
@@ -56,4 +79,3 @@ Execution Results:
 
 COMPLETED:
 Pipeline execution completed successfully.
-
