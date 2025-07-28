@@ -42,12 +42,9 @@ async def check_eligibility(schema_dict: dict) -> dict:
 
         # Run checker
         result = checker.check_eligibility(request=request_obj, retrieved_documents=combined_content or None)
-        # Return structured dict with clear output_text
-        return {
-            "output_text": result["explanation"],
-            "eligibility": result["eligibility"],
-            "follow_up_questions": result.get("follow_up_questions")
-        }
+
+        # Return structured dict directly
+        return result
 
     except Exception as e:
         logger.error("Failed to check eligibility", exc_info=True)

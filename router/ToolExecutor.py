@@ -142,7 +142,8 @@ class ToolExecutor:
     Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
     - Make sure you mention the sources at the end of the explanation.
     - Do not provide any commentary (or preamble) before the explanation, just provide the explanation.
-    - You can add the follow up questions as : "People who asked about this, also asked for:"
+    - You can add the follow up questions too, based on the context, make the subheading for it."
+    - If you have a JSON, do not explain what the keys mean, just focus on simplifying the "content" of the JSON.
     '''
                     user_message = f"""Here is the tool's response:\n\n{json.dumps(parsed, indent=2)}\n\nPlease convert this into a simple explanation suitable for a user."""
                     final_explanation = self.llm_client.run_chat(system_prompt, user_message)

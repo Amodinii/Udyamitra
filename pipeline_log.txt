@@ -1,12 +1,12 @@
 User Query:
-am i eligible for PLI 2.0 scheme?
+What are the eligibility criteria for the PLI2.0 scheme?
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "am i eligible for PLI 2.0 scheme?",
+  "query": "What are the eligibility criteria for the PLI2.0 scheme?",
   "intents": [
     "check_eligibility"
   ],
@@ -51,7 +51,7 @@ Running execution plan with tool executor...
 
 Execution Results:
 {
-  "EligibilityChecker": "Here's a simple explanation:\n\nYou are not eligible for the PLI2.0 scheme at this time because there's not enough information about your company and investment plans. \nTo be considered eligible, the following information is needed:\n- Company type (Global, Hybrid, or Domestic)\n- Minimum investment you're planning to make\n- Expected increase in sales due to this investment\n\nTo proceed, provide the following details:\n1. Type of business (individual entrepreneur, company, or partnership firm)\n2. Minimum investment you plan to make\n3. Expected increase in sales due to this investment\n\nThe eligibility criteria are based on the guidelines outlined in THE GAZETTE OF INDIA: EXTRAORDINARY, PLI Scheme Guidelines.\n\nThe output is broken down into:\n- \"output_text\": A detailed message explaining the ineligibility and required information\n- \"eligibility\": A section that includes:\n  - \"scheme_name\": The name of the scheme (PLI2.0)\n  - \"eligible\": Eligibility status (null, indicating it couldn't be determined)\n  - \"reasons\": Reasons for ineligibility (Insufficient information)\n  - \"missing_fields\": Required information that's missing (user type, investment thresholds, net incremental sales)\n  - \"suggestions\": Suggestions to become eligible (providing company type and investment plans)\n  - \"sources\": Sources used to determine eligibility (THE GAZETTE OF INDIA: EXTRAORDINARY, PLI Scheme Guidelines)\n- \"follow_up_questions\": Questions to help determine eligibility (business type, minimum investment, expected sales increase)\n\nSources: THE GAZETTE OF INDIA: EXTRAORDINARY, PLI Scheme Guidelines.\n\nPeople who asked about this, also asked for: \n- How to determine my company type (Global, Hybrid, or Domestic)?\n- What are the minimum investment thresholds for the PLI2.0 scheme?\n- How to calculate the expected increase in sales due to my investment?"
+  "EligibilityChecker": "Here's a simple explanation:\n\n## Eligibility Check Result for PLI2.0 Scheme\n\nThe eligibility check for the PLI2.0 scheme could not be determined due to insufficient information. \nThe missing information includes investment thresholds, net incremental sales generated, and the type of company.\n\nTo proceed, you need to provide investment details and specify your company type.\n\nThe information is based on \"THE GAZETTE OF INDIA : EXTRAORDINARY\".\n\n## Follow-up Questions\n1. What investment thresholds are you planning to meet for the PLI2.0 scheme?\n2. What are the net incremental sales you anticipate as a result of this investment?\n3. What type of company are you representing (e.g., MSME, Large Enterprise, etc.)?"
 }
 
 COMPLETED:
