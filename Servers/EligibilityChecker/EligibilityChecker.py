@@ -7,8 +7,9 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
 from utility.model import EligibilityCheckRequest, EligibilityCheckResponse
-from .QuestionGenerator import QuestionGenerator  
+from .QuestionGenerator import QuestionGenerator
 from typing import Optional
+
 
 class EligibilityChecker:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
@@ -69,37 +70,19 @@ class EligibilityChecker:
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
             eligibility = EligibilityCheckResponse(**raw_response)
 
+            response = {
+                "eligibility": eligibility.model_dump()
+            }
+
             if eligibility.eligible is None and eligibility.missing_fields:
                 follow_ups = self.question_generator.generate_questions(
                     missing_fields=eligibility.missing_fields,
                     scheme_name=eligibility.scheme_name
                 )
+                response["follow_up_questions"] = follow_ups
 
-                explanation = self.beautify_response(eligibility, follow_ups)
-
-                return {
-                    "explanation": explanation,
-                    "eligibility": eligibility.model_dump(),
-                    "follow_up_questions": follow_ups
-                }
-
-            # If eligibility is decidable
-            explanation = self.beautify_response(eligibility)
-            return {
-                "explanation": explanation,
-                "eligibility": eligibility.model_dump()
-            }
+            return response
 
         except Exception as e:
             logger.error(f"EligibilityChecker failed: {e}")
             raise UdayamitraException("Failed to check eligibility", sys)
-        
-    def beautify_response(self, eligibility: EligibilityCheckResponse, follow_ups: Optional[list[str]] = None) -> str:
-        return self.llm_client.summarize_json_output(
-            explanation_json={
-                "eligibility": eligibility.model_dump(),
-                "follow_up_questions": follow_ups or []
-            },
-            context=f"Eligibility explanation for scheme: {eligibility.scheme_name}"
-        )
-

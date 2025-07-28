@@ -27,7 +27,8 @@ class StartRequest(BaseModel):
 async def start_pipeline(request: StartRequest):
     global pipeline_instance
     pipeline_instance = Pipeline(request.user_query)
-    result = await pipeline_instance.run()  
+    result = await pipeline_instance.run()
+    print(f"Result: {result}")
     return {
         "message": "Pipeline completed",
         "stage": pipeline_instance.stage.name,

@@ -6,13 +6,15 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-
+import re
+import ast
 from router.ModelResolver import ModelResolver
 from router.SchemaGenerator import SchemaGenerator
 from utility.model import ExecutionPlan, ToolTask, ToolRegistryEntry, Metadata
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import load_registry_from_file
+from utility.LLM import LLMClient
 
 
 class ToolExecutor:
@@ -24,6 +26,8 @@ class ToolExecutor:
                 raise UdayamitraException("Tool registry is empty. Ensure tools are registered properly.", sys)
             self.resolver = ModelResolver("utility.model")
             self.schema_generator = SchemaGenerator()
+            self.llm_client = LLMClient(model="meta-llama/llama-4-maverick-17b-128e-instruct")
+
             logger.info("ToolExecutor initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ToolExecutor: {e}")
@@ -35,16 +39,13 @@ class ToolExecutor:
             model_class = self.resolver.resolve(tool_schema_name)
             logger.info(f"Resolved class: {model_class.__name__}")
             assert issubclass(model_class, BaseModel)
-            return model_class  # MUST return the resolved class
+            return model_class
         except Exception as e:
             logger.error(f"Failed to resolve schema: {e}")
             raise UdayamitraException(f"Failed to resolve schema: {e}", sys)
 
     @asynccontextmanager
     async def connect_to_server_for_tool(self, tool_name: str):
-        """
-        Connects to the MCP server endpoint for the given tool, using context managers.
-        """
         if tool_name not in self.tool_registry:
             raise UdayamitraException(f"Tool '{tool_name}' not found in registry.", sys)
 
@@ -55,7 +56,7 @@ class ToolExecutor:
             async with ClientSession(read_stream, write_stream) as session:
                 logger.info("Initializing MCP session...")
                 await session.initialize()
-                logger.info(f"MCP session initialized successfully for endpoint {endpoint}")
+                logger.info(f"MCP session initialized for {endpoint}")
                 yield session
 
     async def get_required_inputs(self, session: ClientSession, tool_name: str) -> dict:
@@ -76,18 +77,38 @@ class ToolExecutor:
                 raise UdayamitraException(
                     f"No output found from '{task.input_from}' to resolve input for '{task.tool_name}'", sys
                 )
-            return {
-                "output_text": referenced_output.get("output_text")
-            }
+            return {"output_text": referenced_output.get("output_text")}
         return task.input
 
-    async def run_execution_plan(self, plan: ExecutionPlan, metadata: Metadata,flatten_output: bool = False) -> Union[str, Dict[str, Any]]:
-        """
-        Executes the given execution plan (only sequential supported).
-        If `flatten_output=True` and only one task, returns its cleaned string directly.
-        Otherwise returns a dict of tool_name → cleaned string.
-        """
+    @staticmethod
+    def format_explanation(raw: str) -> str:
+        """Clean and format the raw LLM explanation for frontend display."""
+        cleaned = raw.strip()
+
+        # Convert escaped \n to real newlines, if necessary
+        if "\\n" in cleaned:
+            cleaned = cleaned.replace("\\n", "\n")
+
+        # Normalize excessive newlines
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+
+        # Optionally format bullets (for markdown or plain text)
+        cleaned = cleaned.replace("* ", "• ")
+
+        # Add consistent header if not present
+        if not cleaned.lower().startswith("here's a simple explanation"):
+            cleaned = "Here's a simple explanation:\n\n" + cleaned
+
+        return cleaned
+    
+    async def run_execution_plan(
+        self,
+        plan: ExecutionPlan,
+        metadata: Metadata,
+        flatten_output: bool = False
+    ) -> Union[str, Dict[str, Any]]:
         results: Dict[str, Any] = {}
+
         if plan.execution_type != "sequential":
             raise UdayamitraException(f"Execution type '{plan.execution_type}' not supported yet.", sys)
 
@@ -109,7 +130,6 @@ class ToolExecutor:
                     wrapped_input = {"schema_dict": full_input.model_dump()}
                     response = await session.call_tool(required_inputs["server_Tool"], wrapped_input)
 
-                    # Parse JSON or fallback to raw text
                     parsed = {}
                     if hasattr(response, "content") and response.content:
                         try:
@@ -117,37 +137,41 @@ class ToolExecutor:
                         except Exception:
                             parsed = {"output_text": response.content[0].text}
 
-                    # Build cleaned explanation
-                    explanation = parsed.get("explanation") or parsed.get("output_text") or ""
-                    explanation = explanation.strip().replace("\\n", "\n")
+                    # Run the LLM
+                    system_prompt = '''You are a helpful assistant that explains the output of a tool to the user, in an easy, detailed explainable way. 
+    Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
+    - Make sure you mention the sources at the end of the explanation.
+    - Do not provide any commentary (or preamble) before the explanation, just provide the explanation.
+    - You can add the follow up questions too, based on the context, make the subheading for it."
+    - If you have a JSON, do not explain what the keys mean, just focus on simplifying the "content" of the JSON.
+    '''
+                    user_message = f"""Here is the tool's response:\n\n{json.dumps(parsed, indent=2)}\n\nPlease convert this into a simple explanation suitable for a user."""
+                    final_explanation = self.llm_client.run_chat(system_prompt, user_message)
 
-                    if not explanation:
-                        eligibility = parsed.get("eligibility", {})
-                        status = (
-                            "Eligible" if eligibility.get("eligible") is True else
-                            "Not Eligible" if eligibility.get("eligible") is False else
-                            "Eligibility Not Determined"
-                        )
-                        scheme = eligibility.get("scheme_name", "the scheme")
-                        explanation = f"Eligibility for {scheme}: {status}."
+                    # Fix the \n before formatting
+                    if isinstance(final_explanation, str) and '\\n' in final_explanation:
+                        try:
+                            final_explanation = ast.literal_eval(f"'''{final_explanation}'''")
+                            logger.info(f"Evaluated explanation: {final_explanation}")
+                        except Exception:
+                            final_explanation = final_explanation.replace("\\n", "\n")  # fallback
 
-                    # Only ask the first follow‑up question, if any
-                    follow_ups = parsed.get("follow_up_questions", [])
-                    if follow_ups:
-                        explanation += f"\n\nTo continue, please answer:\n{follow_ups[0]}"
+                    # Now format
+                    formatted = self.format_explanation(raw=final_explanation)
 
-                    results[task.tool_name] = explanation.encode().decode("unicode_escape").strip('"')
+                    results[task.tool_name] = formatted
 
                 except Exception as e:
                     logger.error(f"Error calling tool '{task.tool_name}': {e}")
                     results[task.tool_name] = f"Failed to process {task.tool_name}: {e}"
 
-        # Return only the explanation string if asked and there’s only one result
         if flatten_output and len(results) == 1:
             return next(iter(results.values()))
 
-        return results
+        if results:
+            return {
+                tool: explanation
+                for tool, explanation in results.items()
+            }
 
-
-
-
+        return "No tools could be executed successfully."

@@ -47,6 +47,8 @@ class LLMClient:
         system_prompt = (
             "You are a helpful assistant that explains structured eligibility results in clear, user-friendly language. "
             "Highlight whether the user is eligible or not, and if not, explain why and what is missing."
+            "You job is to explain the summary too, not just summarize."
+            "Dont include any other information in your response."
         )
 
         user_message = f"""
