@@ -1,23 +1,19 @@
 User Query:
-Am I eligible for PLI 2.0?
+I am an individual.
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "Am I eligible for PLI 2.0?",
-  "intents": [
-    "check_eligibility"
-  ],
-  "tools_required": [
-    "EligibilityChecker"
-  ],
+  "query": "I am an individual.",
+  "intents": [],
+  "tools_required": [],
   "entities": {
-    "scheme": "PLI2.0"
+    "scheme": ""
   },
   "user_profile": {
-    "user_type": "entrepreneur",
+    "user_type": "individual",
     "location": {
       "raw": "india",
       "city": null,
@@ -35,13 +31,35 @@ Execution Plan:
   "execution_type": "sequential",
   "task_list": [
     {
-      "tool_name": "EligibilityChecker",
+      "tool_name": "UserTypeValidator",
       "input": {
-        "scheme": "PLI2.0",
-        "user_type": "entrepreneur",
-        "location": "India"
+        "user_type": "individual"
       },
       "input_from": null
+    },
+    {
+      "tool_name": "LocationResolver",
+      "input": {
+        "location": "India"
+      },
+      "input_from": "UserTypeValidator"
+    },
+    {
+      "tool_name": "SchemeResolver",
+      "input": {
+        "scheme": ""
+      },
+      "input_from": "LocationResolver"
+    },
+    {
+      "tool_name": "QueryResponder",
+      "input": {
+        "query": "I am an individual.",
+        "user_type": "individual",
+        "location": "India",
+        "scheme": ""
+      },
+      "input_from": "SchemeResolver"
     }
   ]
 }
@@ -49,27 +67,6 @@ Execution Plan:
 EXECUTION:
 Running execution plan with tool executor...
 
-Execution Results:
-{
-  "EligibilityChecker": {
-    "tool": "EligibilityChecker",
-    "output_text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
-    "raw_output": {
-      "meta": null,
-      "content": [
-        {
-          "type": "text",
-          "text": "{\n  \"eligibility\": {\n    \"scheme_name\": \"PLI2.0\",\n    \"eligible\": null,\n    \"reasons\": [\n      \"Insufficient information to determine eligibility\"\n    ],\n    \"missing_fields\": [\n      \"user_type details, investment thresholds, and other eligibility criteria\"\n    ],\n    \"suggestions\": [\n      \"Provide more details about your business, investment plans, and other relevant information\"\n    ],\n    \"sources\": [\n      \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\"\n    ]\n  },\n  \"follow_up_questions\": [\n    \"Are you an individual or an entity (such as a company or partnership firm)?\",\n    \"What is the amount you are planning to invest?\",\n    \"Are you already operating in the industry related to the PLI2.0 scheme, or are you a new entrant?\",\n    \"In which sector under PLI2.0 are you interested in investing (e.g., electronics, pharmaceuticals, etc.)?\"\n  ]\n}",
-          "annotations": null,
-          "meta": null
-        }
-      ],
-      "structuredContent": null,
-      "isError": false
-    }
-  }
-}
-
-COMPLETED:
-Pipeline execution completed successfully.
+ERROR:
+Unexpected error: 'NoneType' object has no attribute 'tb_lineno'
 
