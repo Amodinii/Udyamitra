@@ -73,8 +73,7 @@ class Pipeline:
             with open("output.json", "w") as f:
                 json.dump(self.results, f, indent=2)
 
-            return self.results  # ✅ Return result to whoever awaits it
-
+            return self.results  
         except UdayamitraException as ue:
             self.set_stage(PipelineStage.ERROR, f"UdayamitraException: {str(ue)}")
         except Exception as e:

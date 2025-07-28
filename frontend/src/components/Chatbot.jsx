@@ -58,11 +58,16 @@ function Chatbot() {
           const last = draft[draft.length - 1];
 
           if (status.stage === 'COMPLETED' && status.results) {
-            draft[draft.length - 1] = {
-              role: 'assistant',
-              content: JSON.stringify(status.results, null, 2),
-              loading: false
-            };
+          // Convert the JSON object into a Markdown string
+          const formattedContent = Object.entries(status.results)
+            .map(([tool, explanation]) => `### Tool used for the query: ${tool}\n\n${explanation}`)
+            .join('\n\n');
+
+          draft[draft.length - 1] = {
+            role: 'assistant',
+            content: formattedContent,
+            loading: false
+          };
             setIsPolling(false);
             clearInterval(interval);
           } else {
