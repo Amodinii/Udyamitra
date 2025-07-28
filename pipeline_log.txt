@@ -1,13 +1,12 @@
 User Query:
-What are the eligibility criteria for the PLI2.0 scheme?
-
+Am I eligible for SPECS?
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "What are the eligibility criteria for the PLI2.0 scheme?",
+  "query": "Am I eligible for SPECS?",
   "intents": [
     "check_eligibility"
   ],
@@ -15,10 +14,10 @@ Extracted Metadata:
     "EligibilityChecker"
   ],
   "entities": {
-    "scheme": ""
+    "scheme": "SPECS"
   },
   "user_profile": {
-    "user_type": "individual",
+    "user_type": "entrepreneur",
     "location": {
       "raw": "india",
       "city": null,
@@ -36,35 +35,13 @@ Execution Plan:
   "execution_type": "sequential",
   "task_list": [
     {
-      "tool_name": "UserTypeValidator",
+      "tool_name": "EligibilityChecker",
       "input": {
-        "user_type": "individual"
-      },
-      "input_from": null
-    },
-    {
-      "tool_name": "LocationResolver",
-      "input": {
+        "scheme": "SPECS",
+        "user_type": "entrepreneur",
         "location": "India"
       },
-      "input_from": "UserTypeValidator"
-    },
-    {
-      "tool_name": "SchemeResolver",
-      "input": {
-        "scheme": ""
-      },
-      "input_from": "LocationResolver"
-    },
-    {
-      "tool_name": "QueryResponder",
-      "input": {
-        "query": "I am an individual.",
-        "user_type": "individual",
-        "location": "India",
-        "scheme": ""
-      },
-      "input_from": "SchemeResolver"
+      "input_from": null
     }
   ]
 }
@@ -74,8 +51,9 @@ Running execution plan with tool executor...
 
 Execution Results:
 {
-  "EligibilityChecker": "Here's a simple explanation:\n\n## Eligibility Check Result for PLI2.0 Scheme\n\nThe eligibility check for the PLI2.0 scheme could not be determined due to insufficient information. \nThe missing information includes investment thresholds, net incremental sales generated, and the type of company.\n\nTo proceed, you need to provide investment details and specify your company type.\n\nThe information is based on \"THE GAZETTE OF INDIA : EXTRAORDINARY\".\n\n## Follow-up Questions\n1. What investment thresholds are you planning to meet for the PLI2.0 scheme?\n2. What are the net incremental sales you anticipate as a result of this investment?\n3. What type of company are you representing (e.g., MSME, Large Enterprise, etc.)?"
+  "EligibilityChecker": "Here's a simple explanation:\n\nThe tool was unable to determine if you're eligible for the SPECS scheme. This is because some information is missing. The missing details include your role in the project, project information, and costs associated with the project. To check your eligibility, you need to provide details about your manufacturing project, such as its goals, duration, and expenses. \n\nThe information required includes:\n- Your role or type in the project (e.g., entrepreneur, investor, developer)\n- Project details, such as its name, location, and a brief description\n- Capital expenditures for your project, including costs for land acquisition, equipment, construction, etc.\n\nThe information is based on the SPECS Scheme FAQs and Guidelines.\n\n## Follow-up Questions\n1. What is your role or type in the project (e.g., entrepreneur, investor, developer)?\n2. Can you provide details about your project, such as its name, location, and a brief description?\n3. What are the capital expenditures for your project, including costs for land acquisition, equipment, construction, etc.?"
 }
 
 COMPLETED:
 Pipeline execution completed successfully.
+

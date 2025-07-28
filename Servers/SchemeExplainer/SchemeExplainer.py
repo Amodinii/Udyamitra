@@ -21,34 +21,49 @@ class SchemeExplainer:
     def explain_scheme(self, scheme_metadata: SchemeMetadata, retrieved_documents: str = None) -> SchemeExplanationResponse:
         try:
             system_prompt = """
-                You are a knowledgeable assistant that explains government schemes in India. 
-                Given a scheme name and metadata about the user's context (location, user type, etc.), 
-                you must generate a clear, helpful explanation of the scheme that is customized for the user.
-                You may optionally be given a list of documents or excerpts as context to help you generate the explanation.
-                Always respond in a structured JSON format that follows the specified schema, we don't need any additional comments or explanations:
-                {
-                    "scheme_name": "<name of the scheme>",
-                    "explanation": "<detailed explanation customized to the user profile>",
-                    "follow_up_suggestions": ["<optional suggestion>", "..."],
-                    "sources": ["<optional source links or documents>", "..."]
-                }
+            You are a knowledgeable assistant that explains government schemes in India.
+
+            Your goals-
+            Very Important:
+            - If documents are provided, you **must rely primarily on them** for facts, structure, and sources.
+            - Use your own knowledge **only when necessary** to fill small gaps — never contradict or override the documents.
+            - Cite the document sources where possible.
+            - If documents are not given, use your own knowledge.
+
+            You must respond in **valid JSON** with this exact schema:
+
+            {
+            "scheme_name": "<name of the scheme>",
+            "explanation": "<detailed explanation customized to the user profile>",
+            "sources": ["<optional source links or documents>", "..."]
+            }
+
+            Important:
+            - Escape all quotes properly. Ensure the output is clean, well-structured, and parseable.
             """
+
 
             user_prompt = f"""
-                Please explain the following scheme(s) to the user:
-                Scheme Metadata:
-                {scheme_metadata.model_dump_json(indent=2)}
-                Retrieved Documents (if any):
-                {retrieved_documents if retrieved_documents else "None"}
+            Please explain the following scheme for a user.
 
-                Requirements:
-                - If documents are provided, base your explanation and sources on them.
-                - If not provided, respond using your general knowledge.
-                - The explanation should be specific to the user's location and user type.
-                - Mention key benefits, eligibility, and how the scheme is useful to them.
-                - Use simple and direct language.
-                - Respond only in JSON format, matching the given schema exactly.
+            === SCHEME METADATA ===
+            {scheme_metadata.model_dump_json(indent=2)}
+
+            === RETRIEVED DOCUMENTS (optional) ===
+            {retrieved_documents if retrieved_documents else "None"}
+
+            Your explanation must:
+            - Be detailed and packed with helpful, real information.
+            - Tailor content to the user's profile (especially their location and user_type).
+            - Mention key benefits, eligibility, application process (if relevant), and practical value.
+            - If documents are provided, ground the explanation and sources in them. Otherwise, use your knowledge.
+            - Use simple and direct language (no legalese or fluff).
+            - Highlight actionable next steps if appropriate and also highlight the sources.
+
+            Strictl Requirement:
+            - Don't mention Follow-up questions.
             """
+
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
             validated_response = SchemeExplanationResponse(**raw_response)
             return validated_response
