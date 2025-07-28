@@ -1,23 +1,19 @@
 User Query:
-Am I elgible for PLI 2.0?
+I am an individual.
 
 METADATA_EXTRACTION:
 Extracting metadata from user query...
 
 Extracted Metadata:
 {
-  "query": "Am I elgible for PLI 2.0?",
-  "intents": [
-    "check_eligibility"
-  ],
-  "tools_required": [
-    "EligibilityChecker"
-  ],
+  "query": "I am an individual.",
+  "intents": [],
+  "tools_required": [],
   "entities": {
-    "scheme": "PLI2.0"
+    "scheme": ""
   },
   "user_profile": {
-    "user_type": "entrepreneur",
+    "user_type": "individual",
     "location": {
       "raw": "india",
       "city": null,
@@ -35,13 +31,35 @@ Execution Plan:
   "execution_type": "sequential",
   "task_list": [
     {
-      "tool_name": "EligibilityChecker",
+      "tool_name": "UserTypeValidator",
       "input": {
-        "scheme": "PLI2.0",
-        "user_type": "entrepreneur",
-        "location": "India"
+        "user_type": "individual"
       },
       "input_from": null
+    },
+    {
+      "tool_name": "LocationResolver",
+      "input": {
+        "location": "India"
+      },
+      "input_from": "UserTypeValidator"
+    },
+    {
+      "tool_name": "SchemeResolver",
+      "input": {
+        "scheme": ""
+      },
+      "input_from": "LocationResolver"
+    },
+    {
+      "tool_name": "QueryResponder",
+      "input": {
+        "query": "I am an individual.",
+        "user_type": "individual",
+        "location": "India",
+        "scheme": ""
+      },
+      "input_from": "SchemeResolver"
     }
   ]
 }
@@ -49,11 +67,6 @@ Execution Plan:
 EXECUTION:
 Running execution plan with tool executor...
 
-Execution Results:
-{
-  "EligibilityChecker": "**Eligibility for PLI2.0 Scheme: Not Determined**\n\nWe are unable to determine your eligibility for the PLI2.0 scheme at this time.\n\n**Why is your eligibility undetermined?**\n\nThe information provided is insufficient to assess your eligibility. Specifically, we need more details about:\n\n1. Your user type (individual entrepreneur, company, or existing industrial unit)\n2. Your investment plans and thresholds\n3. Your company type (Global, Hybrid, or Domestic)\n\n**What can you do next?**\n\nTo proceed, please provide more information about your company type and investment plans. We recommend answering the following questions:\n\n1. Are you an individual entrepreneur, a company, or an existing industrial unit?\n2. What is the total investment you are planning to make in the scheme?\n3. Is your company Global, Hybrid (with both domestic and global operations), or purely Domestic?\n\nOur assessment is based on the guidelines outlined in \"THE GAZETTE OF INDIA : EXTRAORDINARY, PLI Scheme Guidelines\". Once we receive the necessary information, we will be able to determine your eligibility for the PLI2.0 scheme.\n\nTo continue, please answer:\nAre you an individual entrepreneur, a company, or an existing industrial unit?"
-}
-
-COMPLETED:
-Pipeline execution completed successfully.
+ERROR:
+Unexpected error: 'NoneType' object has no attribute 'tb_lineno'
 
