@@ -1,5 +1,5 @@
-from EligibilityFlow.state import EligibilityState
-from QuestionGenerator import QuestionGenerator
+from ..state import EligibilityState
+from ...QuestionGenerator import QuestionGenerator
 
 question_generator = QuestionGenerator()
 
