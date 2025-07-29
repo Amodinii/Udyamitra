@@ -1,32 +1,45 @@
 import sys
 import json
 import asyncio
-from typing import Dict, Any, Union
-from pydantic import BaseModel
-from contextlib import asynccontextmanager
-from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
 import re
 import ast
+from datetime import datetime
+from typing import Dict, Any, Union, Optional
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
+
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
 from router.ModelResolver import ModelResolver
 from router.SchemaGenerator import SchemaGenerator
-from utility.model import ExecutionPlan, ToolTask, ToolRegistryEntry, Metadata
-from Logging.logger import logger
-from Exception.exception import UdayamitraException
+from utility.model import (
+    ExecutionPlan,
+    ToolTask,
+    ToolRegistryEntry,
+    Metadata,
+)
+from utility.StateManager import StateManager
 from utility.register_tools import load_registry_from_file
 from utility.LLM import LLMClient
+from Logging.logger import logger
+from Exception.exception import UdayamitraException
 
 
 class ToolExecutor:
-    def __init__(self):
+    def __init__(self, conversation_state: Optional[Any] = None):
         try:
             logger.info("Initializing ToolExecutor")
             self.tool_registry: Dict[str, ToolRegistryEntry] = load_registry_from_file()
             if not self.tool_registry:
                 raise UdayamitraException("Tool registry is empty. Ensure tools are registered properly.", sys)
+
             self.resolver = ModelResolver("utility.model")
             self.schema_generator = SchemaGenerator()
             self.llm_client = LLMClient(model="meta-llama/llama-4-maverick-17b-128e-instruct")
+
+            self.state_manager = StateManager(initial_state=conversation_state)
+            self.conversation_state = self.state_manager.get_state()
 
             logger.info("ToolExecutor initialized successfully")
         except Exception as e:
@@ -82,25 +95,15 @@ class ToolExecutor:
 
     @staticmethod
     def format_explanation(raw: str) -> str:
-        """Clean and format the raw LLM explanation for frontend display."""
         cleaned = raw.strip()
-
-        # Convert escaped \n to real newlines, if necessary
         if "\\n" in cleaned:
             cleaned = cleaned.replace("\\n", "\n")
-
-        # Normalize excessive newlines
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-
-        # Optionally format bullets (for markdown or plain text)
         cleaned = cleaned.replace("* ", "• ")
-
-        # Add consistent header if not present
         if not cleaned.lower().startswith("here's a simple explanation"):
             cleaned = "Here's a simple explanation:\n\n" + cleaned
-
         return cleaned
-    
+
     async def run_execution_plan(
         self,
         plan: ExecutionPlan,
@@ -108,6 +111,9 @@ class ToolExecutor:
         flatten_output: bool = False
     ) -> Union[str, Dict[str, Any]]:
         results: Dict[str, Any] = {}
+
+        # Add user message to conversation
+        self.state_manager.add_message(role="user", content=metadata.query)
 
         if plan.execution_type != "sequential":
             raise UdayamitraException(f"Execution type '{plan.execution_type}' not supported yet.", sys)
@@ -123,7 +129,8 @@ class ToolExecutor:
                         metadata=metadata.model_dump(),
                         execution_plan=plan.model_dump(),
                         model_class=schema_class,
-                        user_input=input_data
+                        user_input=input_data,
+                        state=self.conversation_state
                     )
 
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
@@ -137,29 +144,38 @@ class ToolExecutor:
                         except Exception:
                             parsed = {"output_text": response.content[0].text}
 
-                    # Run the LLM
+                    # LLM Explanation
                     system_prompt = '''You are a helpful assistant that explains the output of a tool to the user, in an easy, detailed explainable way. 
-    Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
-    - Make sure you mention the sources at the end of the explanation.
-    - Do not provide any commentary (or preamble) before the explanation, just provide the explanation.
-    - You can add the follow up questions too, based on the context, make the subheading for it."
-    - If you have a JSON, do not explain what the keys mean, just focus on simplifying the "content" of the JSON.
-    '''
+Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
+- Make sure you mention the sources at the end of the explanation.
+- Do not provide any commentary (or preamble) before the explanation, just provide the explanation.
+- You can add the follow up questions too, based on the context, make the subheading for it.
+- If you have a JSON, do not explain what the keys mean, just focus on simplifying the "content" of the JSON.
+'''
                     user_message = f"""Here is the tool's response:\n\n{json.dumps(parsed, indent=2)}\n\nPlease convert this into a simple explanation suitable for a user."""
                     final_explanation = self.llm_client.run_chat(system_prompt, user_message)
 
-                    # Fix the \n before formatting
                     if isinstance(final_explanation, str) and '\\n' in final_explanation:
                         try:
                             final_explanation = ast.literal_eval(f"'''{final_explanation}'''")
-                            logger.info(f"Evaluated explanation: {final_explanation}")
                         except Exception:
-                            final_explanation = final_explanation.replace("\\n", "\n")  # fallback
+                            final_explanation = final_explanation.replace("\\n", "\n")
 
-                    # Now format
                     formatted = self.format_explanation(raw=final_explanation)
-
                     results[task.tool_name] = formatted
+
+                    # ✅ Update state using StateManager
+                    self.state_manager.add_message(role="tool", content=formatted, tool_used=task.tool_name)
+                    self.state_manager.set_last_tool(task.tool_name)
+                    self.state_manager.set_focus(metadata.query)
+                    self.state_manager.set_tool_memory(task.tool_name, parsed)
+
+                    # ✅ Merge metadata.entities + user_profile into context_entities
+                    merged_context = {
+                        **metadata.entities,
+                        **(metadata.user_profile.model_dump() if metadata.user_profile else {})
+                    }
+                    self.state_manager.update_context_entities(merged_context)
 
                 except Exception as e:
                     logger.error(f"Error calling tool '{task.tool_name}': {e}")
@@ -168,10 +184,8 @@ class ToolExecutor:
         if flatten_output and len(results) == 1:
             return next(iter(results.values()))
 
-        if results:
-            return {
-                tool: explanation
-                for tool, explanation in results.items()
-            }
+        logger.debug(f"[FINAL STATE BEFORE RETURN] {self.conversation_state.model_dump_json(indent=2)}")
+        return results if results else "No tools could be executed successfully."
 
-        return "No tools could be executed successfully."
+    def get_state(self):
+        return self.conversation_state

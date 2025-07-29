@@ -210,4 +210,5 @@ __marimo__/
 data/raw/
 output/
 output.json
+pipeline_log.txt
 test.py
