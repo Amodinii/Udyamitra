@@ -43,7 +43,6 @@ class EligibilityChecker:
             "eligible": true | false | null,
             "reasons": ["<reason 1>", "<reason 2>"],
             "missing_fields": ["<required user inputs that are missing>"],
-            "suggestions": ["<follow-up questions or next steps>"],
             "sources": ["<source links or document references>"]
             }
 
