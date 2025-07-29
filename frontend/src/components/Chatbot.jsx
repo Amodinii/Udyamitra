@@ -8,6 +8,7 @@ function Chatbot() {
   const [messages, setMessages] = useImmer([]);
   const [newMessage, setNewMessage] = useState('');
   const [isPolling, setIsPolling] = useState(false);
+  const [conversationState, setConversationState] = useState(null); // 🧠 Track conversation state
 
   const isLoading = isPolling;
 
@@ -31,14 +32,29 @@ function Chatbot() {
     setNewMessage('');
 
     try {
-      await api.startPipeline(trimmedMessage);
+      let response;
+
+      if (conversationState) {
+        // Follow-up: call /continue
+        response = await api.continuePipeline(trimmedMessage, conversationState);
+      } else {
+        // Initial query: call /start
+        response = await api.startPipeline(trimmedMessage);
+      }
+
+      // Store and log conversation state
+      if (response.state) {
+        setConversationState(response.state);
+        console.log("Updated Conversation State (on submit):", response.state); // log state
+      }
+
       setIsPolling(true);
     } catch (err) {
       console.error(err);
       setMessages(draft => {
         draft[draft.length - 1] = {
           role: 'assistant',
-          content: 'Something went wrong while starting the pipeline.',
+          content: 'Something went wrong while processing your query.',
           loading: false
         };
       });
@@ -53,25 +69,28 @@ function Chatbot() {
       try {
         const status = await api.getPipelineStatus();
 
-        // If stage has changed or final output is ready, update message
+        // Save and log updated state
+        if (status.state) {
+          setConversationState(status.state);
+          console.log("Updated Conversation State (on polling):", status.state); // log state
+        }
+
         setMessages(draft => {
           const last = draft[draft.length - 1];
 
           if (status.stage === 'COMPLETED' && status.results) {
-          // Convert the JSON object into a Markdown string
-          const formattedContent = Object.entries(status.results)
-            .map(([tool, explanation]) => `### Tool used for the query: ${tool}\n\n${explanation}`)
-            .join('\n\n');
+            const formattedContent = Object.entries(status.results)
+              .map(([tool, explanation]) => `### Tool used for the query: ${tool}\n\n${explanation}`)
+              .join('\n\n');
 
-          draft[draft.length - 1] = {
-            role: 'assistant',
-            content: formattedContent,
-            loading: false
-          };
+            draft[draft.length - 1] = {
+              role: 'assistant',
+              content: formattedContent,
+              loading: false
+            };
             setIsPolling(false);
             clearInterval(interval);
           } else {
-            // update progress message (you can make this smarter)
             last.content = `Current stage: ${status.stage}`;
           }
         });

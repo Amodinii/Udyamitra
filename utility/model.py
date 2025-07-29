@@ -4,6 +4,7 @@ model.py - This module defines the data model for the router configuration.
 
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal, Union    
+from datetime import datetime
 
 class Location(BaseModel):
     raw: str
@@ -75,3 +76,22 @@ class RetrievedDoc(BaseModel):
 
 class RetrieverOutput(BaseModel):
     result: List[RetrievedDoc]
+
+# State Manager
+class Message(BaseModel):
+    role: Literal['user', 'assistant', 'system', 'tool']
+    content: str
+    tool_used: Optional[str] = None
+    timestamp: Optional[datetime] = None
+
+class ToolMemory(BaseModel):
+    tool_name: str
+    data: Dict[str, Any] = {}
+
+class ConversationState(BaseModel):
+    messages: List[Message] = []
+    current_focus: Optional[str] = None  # Scheme name or topic
+    context_entities: Dict[str, Any] = {}  # General info extracted: location, age, gender, etc.
+    last_tool_used: Optional[str] = None
+    tool_memory: Dict[str, ToolMemory] = {}  # Memory per tool
+    user_profile: Optional[UserProfile] = None
