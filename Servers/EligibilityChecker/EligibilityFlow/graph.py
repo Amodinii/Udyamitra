@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph, END
-from EligibilityFlow.state import EligibilityState
-from EligibilityFlow.nodes.check_eligibility import check_eligibility_node
-from EligibilityFlow.nodes.generate_question import generate_question_node
-from EligibilityFlow.nodes.merge_user_input import merge_user_input_node
-from EligibilityFlow.nodes.is_done import is_done_node
+from .state import EligibilityState
+from .nodes.check_eligibility import check_eligibility_node
+from .nodes.generate_question import generate_question_node
+from .nodes.merge_user_input import merge_user_input_node
+from .nodes.is_done import is_done_node
 
 
 def build_eligibility_graph() -> StateGraph:
