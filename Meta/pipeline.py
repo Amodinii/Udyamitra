@@ -5,7 +5,7 @@ intent_pipeline.py - Combines metadata extraction and tool mapping into a single
 import sys
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
-from utility.model import Metadata
+from utility.model import Metadata, ConversationState
 from .extractor import MetadataExtractor
 from .tool_mapper import ToolMapper
 
@@ -19,10 +19,10 @@ class IntentPipeline:
             logger.error(f"Failed to initialize IntentPipeline: {e}")
             raise UdayamitraException("Failed to initialize IntentPipeline", sys)
 
-    def run(self, query: str) -> Metadata:
+    def run(self, query: str, state: ConversationState | None = None) -> Metadata:
         try:
             logger.info(f"Running IntentPipeline for query: {query}")
-            metadata = self.extractor.extract_metadata(query)
+            metadata = self.extractor.extract_metadata(query, state)
             enriched_metadata = self.tool_mapper.map_tools(metadata)
             return enriched_metadata
         except Exception as e:

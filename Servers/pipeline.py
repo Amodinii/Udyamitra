@@ -2,7 +2,7 @@ import json
 import asyncio
 from enum import Enum, auto
 
-from utility.model import Metadata, ExecutionPlan
+from utility.model import Metadata, ExecutionPlan, ConversationState
 from Meta.pipeline import IntentPipeline
 from router.planner import Planner
 from router.ToolExecutor import ToolExecutor
@@ -18,7 +18,7 @@ class PipelineStage(Enum):
     ERROR = auto()
 
 class Pipeline:
-    def __init__(self, user_query: str, log_file: str = "pipeline_log.txt"):
+    def __init__(self, user_query: str, state: ConversationState = None, log_file: str = "pipeline_log.txt"):
         self.user_query = user_query
         self.log_file = log_file
         self.stage = PipelineStage.IDLE
@@ -26,6 +26,9 @@ class Pipeline:
         self.metadata: Metadata | None = None
         self.plan: ExecutionPlan | None = None
         self.results = None
+
+        # New: maintain conversation state
+        self.conversation_state = state if state is not None else ConversationState()
 
         # Clear previous logs
         open(self.log_file, "w").close()
@@ -45,18 +48,20 @@ class Pipeline:
     def extract_metadata(self):
         self.set_stage(PipelineStage.METADATA_EXTRACTION, "Extracting metadata from user query...")
         extractor = IntentPipeline()
-        self.metadata = extractor.run(self.user_query)
+        self.metadata = extractor.run(self.user_query, state=self.conversation_state)
         self.log(f"Extracted Metadata:\n{self.metadata.model_dump_json(indent=2)}")
 
     def plan_execution(self):
         self.set_stage(PipelineStage.PLANNING, "Building execution plan...")
         planner = Planner()
-        self.plan = planner.build_plan(self.metadata)
+        self.plan = planner.build_plan(self.metadata, state=self.conversation_state)
         self.log(f"Execution Plan:\n{self.plan.model_dump_json(indent=2)}")
 
     async def execute_plan(self):
         self.set_stage(PipelineStage.EXECUTION, "Running execution plan with tool executor...")
-        executor = ToolExecutor()
+        
+        # Updated: pass conversation state
+        executor = ToolExecutor(conversation_state=self.conversation_state)
         self.results = await executor.run_execution_plan(self.plan, self.metadata)
         self.log(f"Execution Results:\n{json.dumps(self.results, indent=2)}")
 
@@ -73,7 +78,12 @@ class Pipeline:
             with open("output.json", "w") as f:
                 json.dump(self.results, f, indent=2)
 
-            return self.results  
+            # Optionally return conversation state as well
+            return {
+                "results": self.results,
+                "conversation_state": self.conversation_state.model_dump()
+            }
+
         except UdayamitraException as ue:
             self.set_stage(PipelineStage.ERROR, f"UdayamitraException: {str(ue)}")
         except Exception as e:
@@ -81,11 +91,10 @@ class Pipeline:
 
         return None  # return None on error
 
-
-    # Expose status for frontend
     def get_status(self):
         return {
             "stage": self.stage.name,
             "message": self.status_message,
-            "results": self.results if self.stage == PipelineStage.COMPLETED else None
+            "results": self.results if self.stage == PipelineStage.COMPLETED else None,
+            "state": self.conversation_state.model_dump()
         }
