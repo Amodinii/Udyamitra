@@ -1,4 +1,4 @@
-from EligibilityFlow.state import EligibilityState
+from ..state import EligibilityState
 
 async def merge_user_input_node(state: EligibilityState) -> EligibilityState:
     if state.current_field and state.latest_answer:

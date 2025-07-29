@@ -1,5 +1,5 @@
-from EligibilityFlow.state import EligibilityState
-from EligibilityChecker import EligibilityChecker
+from ..state import EligibilityState
+from ...EligibilityChecker import EligibilityChecker
 
 checker = EligibilityChecker()
 
