@@ -20,7 +20,7 @@ class MetadataExtractor:
     def extract_metadata(self, query: str, state: ConversationState | None = None) -> Metadata:
         try:
             logger.info(f"Extracting metadata from query: {query}")
-        
+
             context_hint = ""
             if state:
                 last_tool = state.last_tool_used or ""
@@ -28,46 +28,55 @@ class MetadataExtractor:
                 last_entities = state.context_entities or {}
 
                 context_hint = f"""
-                Previous tool used: {last_tool}
-                Last assistant message: {last_msg}
-                Previously detected entities (if any): {json.dumps(last_entities)}
-                Use this context if the current query is ambiguous or a follow-up.
-                """
+Previous tool used: {last_tool}
+Last assistant message: {last_msg}
+Previously detected entities (if any): {json.dumps(last_entities)}
+Use this context if the current query is ambiguous or a follow-up.
+""".strip()
 
-            system_prompt = f"""
-            You are a metadata extraction assistant.
-            Your job is to extract the following structured fields from a user query:
-            - intents: A list of high-level user goals like 'explain', 'check_eligibility', 'register'
-            - entities: Key entities such as the name of the scheme. If multiple schemes are mentioned, return them as a list.
-            - user_profile: Includes 'user_type' (e.g., 'woman_entrepreneur', 'student') and 'location'. If no location is specified in the query, use "unknown" or "India" as a fallback.
-            - If user_type is not explicitly mentioned, infer it from the context (e.g., if asking about subsidies, default to "entrepreneur").
-            - Always return non-empty user_type and location if possible.
+            # Final user query with context injected
+            contextual_query = f"{context_hint}\n\nCurrent query: {query}" if context_hint else query
 
-            Respond ONLY with the following JSON structure:
-            {{
-                "intents": [...],
-                "entities": {{
-                    "scheme": "..."
-                }},
-                "user_profile": {{
-                    "user_type": "...",
-                    "location": "..."
-                }}
-            }}
+            system_prompt = """
+You are a metadata extraction assistant.
+Your job is to extract the following structured fields from a user query:
+- intents: A list of high-level user goals like 'explain', 'check_eligibility', 'register'
+- entities: Key entities such as the name of the scheme. If multiple schemes are mentioned, return them as a list.
+- user_profile: Includes 'user_type' (e.g., 'woman_entrepreneur', 'student') and 'location'. If no location is specified in the query, use "unknown" or "India" as a fallback.
+- If user_type is not explicitly mentioned, infer it from the context (e.g., if asking about subsidies, default to "entrepreneur").
+- Always return non-empty user_type and location if possible.
 
-            Context:
-            {context_hint}
-            """
+Respond ONLY with the following JSON structure:
+{
+  "intents": [...],
+  "entities": {
+    "scheme": "..."
+  },
+  "user_profile": {
+    "user_type": "...",
+    "location": "..."
+  }
+}
 
-            raw_output = self.llm_client.run_chat(system_prompt, query)
+- Make sure all keys are enclosed in double quotes and properly comma-separated.
+""".strip()
 
-            json_blocks = re.findall(r'```json\s*(\{.*?\})\s*```', raw_output, re.DOTALL)
-            if not json_blocks:
-                json_blocks = re.findall(r'(\{.*\})', raw_output, re.DOTALL)
-            if not json_blocks:
-                raise ValueError("No valid JSON block found in LLM response.")
+            raw_output = self.llm_client.run_chat(system_prompt, contextual_query)
+            logger.info(f"Raw output from LLM:\n{raw_output}")
 
-            metadata_dict = json.loads(json_blocks[-1])
+            # Clean output to strip ```json and ``` wrappers if present
+            def clean_json(raw: str) -> str:
+                raw = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE)
+                raw = raw.replace("```", "").strip()
+                json_match = re.search(r"\{.*\}", raw, re.DOTALL)
+                if not json_match:
+                    raise ValueError("No valid JSON object found in LLM response")
+                return json_match.group(0)
+
+            cleaned_json = clean_json(raw_output)
+            metadata_dict = json.loads(cleaned_json)
+
+            logger.info(f"Metadata extracted:\n{json.dumps(metadata_dict, indent=2)}")
 
             # Normalize location
             raw_loc = metadata_dict["user_profile"].get("location", "").strip().lower()
@@ -92,11 +101,12 @@ class MetadataExtractor:
                 )
             )
 
-            # Update state.context_entities for future memory
+            # Update conversation state for follow-ups
             if state:
                 state.context_entities.update(metadata_dict["entities"])
 
             return metadata
 
         except Exception as e:
+            logger.error(f"Metadata extraction failed: {e}")
             raise UdayamitraException(f"Metadata extraction failed: {e}", sys)
