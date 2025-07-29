@@ -5,8 +5,9 @@ We aim to build a queue of tasks that need to be executed, each task may or may 
 This planner will use LLMs that will identify the tools/MCP servers that will be connected to based on the metadata of the task.
 '''
 
+import json
 import sys
-from utility.model import Metadata, ExecutionPlan, ToolTask
+from utility.model import Metadata, ExecutionPlan, ToolTask, ConversationState
 from typing import List
 from utility.LLM import LLMClient
 from Logging.logger import logger
@@ -24,31 +25,46 @@ class Planner:
             logger.error(f"Failed to initialize Planner: {e}")
             raise UdayamitraException("Failed to initialize Planner", sys)
 
-    def build_plan(self, metadata: Metadata) -> ExecutionPlan:
+    def build_plan(self, metadata: Metadata, state: ConversationState | None = None) -> ExecutionPlan:
         try:
             logger.info(f"Building execution plan for metadata: {metadata}")
-            system_prompt = "You are a planning assistant for an AI agent that routes user queries to tools. Your job is to plan a sequence of tasks that will be executed to answer the user's query. "
+            context_hint = ""
+            if state:
+                last_tool = state.last_tool_used or ""
+                last_msg = state.messages[-1].content if state.messages else ""
+                last_entities = state.context_entities or {}
+                print(f"Last entities in state manager: {last_entities}")
+                context_hint = f"""
+                Previous tool used: {last_tool}
+                Last assistant message: {last_msg}
+                Previously detected entities (if any): {json.dumps(last_entities)}
+                Use this context if the current query is ambiguous or a follow-up.
+                """
+            system_prompt = "You are a planning assistant for an AI agent that routes user queries to tools. Your job is to plan a sequence of tasks that will be executed to answer the user's query."
+            print(f"State in planner: {state}")
             user_prompt = f"""
-                            Given this metadata:
-                            {metadata.model_dump_json(indent=2)}
-                            
-                            Generate an execution plan that includes:
-                            - The type of execution (sequential or parallel)
-                                - Sequential: Tasks are executed one after another, specifically if one task depends on the output of another
-                                - Parallel: Tasks can be executed simultaneously
-                            - The list of tasks that need to be executed
-                            {{
-                                "execution_type": "sequential",
-                                "tasks": [
-                                    {{
-                                        "tool": "ToolName",
-                                        "input": {{ ... }},
-                                        "input_from": "OptionalPreviousTool"
-                                    }}
-                                ]
-                            }}
-                            Just return the JSON without any commentary.
-                        """
+            Given this metadata:
+            {metadata.model_dump_json(indent=2)}
+            {"\nConversation history:\n" + context_hint if state else ""}
+            
+            Generate an execution plan that includes:
+            - The type of execution (sequential or parallel)
+                - Sequential: Tasks are executed one after another, specifically if one task depends on the output of another
+                - Parallel: Tasks can be executed simultaneously
+            - The list of tasks that need to be executed
+            {{
+                "execution_type": "sequential",
+                "tasks": [
+                    {{
+                        "tool": "ToolName",
+                        "input": {{ ... }},
+                        "input_from": "OptionalPreviousTool"
+                    }}
+                ]
+            }}
+            Just return the JSON without any commentary.
+            """
+
             logger.info("Generating execution plan...")
             plan_dict = self.llm_client.run_json(system_prompt, user_prompt)
             task_list: List[ToolTask] = []
