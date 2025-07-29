@@ -27,22 +27,25 @@ class LLMClient:
     def run_json(self, system_message: str, user_message: str) -> Dict:
         """Return parsed JSON from the LLM"""
         output = self.run_chat(system_message, user_message)
-        print(f"Raw output from LLM: {output}")
+        print(f"Raw output from LLM:\n{output}")
 
-        # Try extracting markdown-style JSON blocks
-        json_blocks = re.findall(r'```json\s*(\{.*?\})\s*```', output, re.DOTALL)
+        # Try extracting code-style JSON block
+        json_blocks = re.findall(r'```json\s*({.*?})\s*```', output, re.DOTALL)
 
-        # Fallback: Try to find a top-level JSON object
+        # Fallback: Grab first standalone JSON object in the string
         if not json_blocks:
-            json_blocks = re.findall(r'(\{.*\})', output, re.DOTALL)
+            json_blocks = re.findall(r'({.*?})', output, re.DOTALL)
 
         if not json_blocks:
             raise ValueError("No valid JSON block found in LLM response.")
 
-        last_block = json_blocks[-1]
+        first_block = json_blocks[0].strip()
 
-        return json.loads(last_block)
-    
+        try:
+            return json.loads(first_block)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON block:\n{first_block}\n\nError: {e}")
+        
     def summarize_json_output(self, explanation_json: dict, context: str = None) -> str:
         system_prompt = (
             "You are a helpful assistant that explains structured eligibility results in clear, user-friendly language. "
