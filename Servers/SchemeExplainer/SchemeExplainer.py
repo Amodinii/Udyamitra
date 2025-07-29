@@ -40,6 +40,9 @@ class SchemeExplainer:
 
             Important:
             - Escape all quotes properly. Ensure the output is clean, well-structured, and parseable.
+
+            Strict Requirement:
+            - Don't mention Follow-up questions.
             """
 
 
@@ -59,9 +62,6 @@ class SchemeExplainer:
             - If documents are provided, ground the explanation and sources in them. Otherwise, use your knowledge.
             - Use simple and direct language (no legalese or fluff).
             - Highlight actionable next steps if appropriate and also highlight the sources.
-
-            Strictl Requirement:
-            - Don't mention Follow-up questions.
             """
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
