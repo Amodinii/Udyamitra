@@ -66,7 +66,6 @@ class EligibilityCheckResponse(BaseModel):
     eligible: Optional[bool]  # True / False / None (if not enough data)
     reasons: List[str]
     missing_fields: Optional[List[str]] = None  # What else we need to decide
-    suggestions: Optional[List[str]] = None  # Follow-up steps (maybe registration)
     sources: Optional[List[str]] = None  # Where the rule came from
 
 # Scheme Retriever

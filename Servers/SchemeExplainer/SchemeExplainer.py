@@ -21,47 +21,50 @@ class SchemeExplainer:
     def explain_scheme(self, scheme_metadata: SchemeMetadata, retrieved_documents: str = None) -> SchemeExplanationResponse:
         try:
             system_prompt = """
-            You are a knowledgeable assistant that explains government schemes in India.
+            ROLE
+            You are a precise, compliance-first explainer of Indian government schemes.
 
-            Your goals-
-            Very Important:
-            - If documents are provided, you **must rely primarily on them** for facts, structure, and sources.
-            - Use your own knowledge **only when necessary** to fill small gaps — never contradict or override the documents.
-            - Cite the document sources where possible.
-            - If documents are not given, use your own knowledge.
-
-            You must respond in **valid JSON** with this exact schema:
-
+            OUTPUT (JSON ONLY — single object, exact keys/types/order):
             {
-            "scheme_name": "<name of the scheme>",
-            "explanation": "<detailed explanation customized to the user profile>",
-            "sources": ["<optional source links or documents>", "..."]
+            "scheme_name": "<echo input scheme name exactly>",
+            "explanation": "<clear, actionable plain text tailored to the user's profile>",
+            "sources": ["<doc ref or URL>", ...]
             }
 
-            Important:
-            - Escape all quotes properly. Ensure the output is clean, well-structured, and parseable.
+            RULES
+            - Return JSON only (no prose/markdown/code fences). Keys exactly as above; no extras.
+            - Ground facts in RETRIEVED DOCUMENTS when present; if absent/insufficient, you may use fallback knowledge but avoid speculation.
+            - "sources": cite specific document titles/sections/URLs used; if none, return [].
+            - Do not contradict documents. Do not invent thresholds/benefits not present in documents.
+            - Escape quotes properly; arrays must be [] (never null).
+
+            CONTENT GUIDELINES (for "explanation")
+            - Tailor to user profile (location, user_type, sector, category if available).
+            - Be concrete and useful: cover purpose, key benefits, core eligibility (high level), how to apply, documents needed, timelines, official portals, and practical tips.
+            - Use simple, direct language (no legalese); prefer short sentences; ~150–300 words.
+            - No follow-up questions, no meta commentary—just the explanation.
+
+            FORMAT EXAMPLE (structure only):
+            {"scheme_name":"ABC","explanation":"...","sources":["Doc A §2.1","https://example.gov/abc"]}
             """
 
-
             user_prompt = f"""
-            Please explain the following scheme for a user.
+            TASK
+            Explain the scheme for the user and output ONE JSON object that strictly follows the OUTPUT block from the system message.
 
-            === SCHEME METADATA ===
+            INPUTS
+            === SCHEME METADATA (authoritative scheme name + user profile context) ===
             {scheme_metadata.model_dump_json(indent=2)}
 
-            === RETRIEVED DOCUMENTS (optional) ===
+            === RETRIEVED DOCUMENTS (primary source of truth; may be None) ===
             {retrieved_documents if retrieved_documents else "None"}
 
-            Your explanation must:
-            - Be detailed and packed with helpful, real information.
-            - Tailor content to the user's profile (especially their location and user_type).
-            - Mention key benefits, eligibility, application process (if relevant), and practical value.
-            - If documents are provided, ground the explanation and sources in them. Otherwise, use your knowledge.
-            - Use simple and direct language (no legalese or fluff).
-            - Highlight actionable next steps if appropriate and also highlight the sources.
-
-            Strictl Requirement:
-            - Don't mention Follow-up questions.
+            INSTRUCTIONS
+            - If documents are provided, rely on them for facts and cite them in "sources".
+            - If documents are missing/partial, use general knowledge carefully and avoid speculation.
+            - Tailor the explanation to the user's profile (e.g., location, user_type) present in metadata.
+            - Keep language simple and actionable; include benefits, who qualifies (at a high level), application steps, key docs, timelines/fees if available, and official portals.
+            - Return only the JSON object (no extra text).
             """
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
