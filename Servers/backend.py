@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
-
+import json
 from .pipeline import Pipeline
 from utility.model import ConversationState, Message
 from utility.StateManager import StateManager
@@ -71,14 +71,25 @@ async def continue_pipeline(request: ContinueRequest):
         "results": output["results"] if output else None,  # <-- fixed key
         "state": state_manager.get_state().model_dump()
     }
-
 # Helper function to extract assistant response from tool results
 def _extract_response_from_results(output: dict) -> str:
     if output and "results" in output:
+        results = output["results"]
+
+        # Fix: decode if results is JSON string
+        if isinstance(results, str):
+            try:
+                results = json.loads(results)
+            except json.JSONDecodeError:
+                return "Invalid results format."
+
         messages = []
-        for tool_name, result_text in output["results"].items():
-            messages.append(f"### Tool used: {tool_name}\n\n{result_text}")
+        for tool_name, result in results.items():
+            # result could be string or dict with output_text
+            explanation = result.get("output_text") if isinstance(result, dict) else str(result)
+            messages.append(f"### Tool used: {tool_name}\n\n{explanation}")
         return "\n\n".join(messages)
+
     return "I'm sorry, I couldn't generate a response."
 
 # GET /status
