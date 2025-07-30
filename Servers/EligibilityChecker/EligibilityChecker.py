@@ -30,56 +30,65 @@ class EligibilityChecker:
         """
         try:
             system_prompt = """
-            You are a strict and detail-oriented assistant that checks whether a user is eligible for an Indian government scheme.
+            ROLE
+            Compliance-first eligibility checker for Indian government schemes.
 
-            Your job:
-            - You will receive a scheme name, user profile data, and optionally scheme-related documents.
-            - Your task is to evaluate the user's eligibility **based strictly on document content** (if provided), or fallback knowledge if not.
-
-            Your response **must** be a clean, valid JSON object with this exact structure:
-
+            OUTPUT (JSON ONLY — single object, exact keys/types):
             {
-            "scheme_name": "<same as input>",
+            "scheme_name": "<echo input>",
             "eligible": true | false | null,
-            "reasons": ["<reason 1>", "<reason 2>"],
-            "missing_fields": ["<required user inputs that are missing>"],
-            "sources": ["<source links or document references>"]
+            "reasons": ["<string>", ...],
+            "missing_fields": ["<string>", ...],
+            "sources": ["<doc ref or URL>", ...]
             }
 
-            Important:
-            - Do NOT include any prose, markdown, explanations, or notes — JSON only.
-            - `eligible` must be `null` if required user data is incomplete.
-            - `reasons` must explain *why* the user is eligible/ineligible.
-            - `sources` must refer to documents or URLs if used.
-            - Be honest about uncertainty if information is missing.
+            RULES
+            - Return JSON only (no prose/markdown). Keys exactly as above; lowercase booleans; arrays use [] (never null).
+            - Ground in RETRIEVED DOCUMENTS when present; if absent/insufficient, you may use fallback knowledge but note uncertainty.
+            - Set "eligible":
+            • true  → all mandatory criteria satisfied per documents  
+            • false → any disqualifier met per documents  
+            • null  → required user data missing OR rules unclear/contradictory (list precise field names in "missing_fields")
+            - "sources": cite specific document sections/URLs used; if none, [].
+            - If documents contradict, prefer the most official/specific; otherwise set eligible=null and explain in "reasons".
+            - Do not invent thresholds/facts not in documents.
 
-            If documents are provided, you MUST prioritize them over your own knowledge.
+            PROCESS (silent)
+            Extract required fields → compare with USER PROFILE → decide (true/false/null) → write brief, rule‑grounded reasons → output JSON.
+
+            FORMAT EXAMPLE (structure only):
+            {"scheme_name":"ABC","eligible":null,"reasons":["Income missing"],"missing_fields":["annual_income"],"sources":["Doc C §3.4"]}
             """
 
             user_prompt = f"""
-            Evaluate user eligibility for the following scheme.
+            TASK
+            Evaluate the user's eligibility for the scheme below and respond with a single JSON object that STRICTLY follows the OUTPUT CONTRACT from the system message.
 
+            INPUTS
             === SCHEME ===
             {request.scheme_name}
 
-            === USER PROFILE ===
+            === USER PROFILE (JSON) ===
             {request.user_profile.model_dump_json(indent=2)}
 
-            === CONTEXT ENTITIES ===
+            === CONTEXT ENTITIES (optional) ===
             {request.context_entities if request.context_entities else "{}"}
 
-            === ORIGINAL USER QUERY ===
+            === ORIGINAL USER QUERY (optional) ===
             {request.query or "Not provided"}
 
-            === RETRIEVED DOCUMENTS ===
+            === RETRIEVED DOCUMENTS (primary source of truth) ===
             {retrieved_documents if retrieved_documents else "None"}
 
-            Instructions:
-            - Use the documents above as your **primary source** of rules and requirements.
-            - If documents are not present or are incomplete, fallback to general knowledge and clearly mention uncertainty.
-            - If you cannot determine eligibility, set "eligible": null and list what's missing.
-            - If eligible or ineligible, clearly explain the reasons based on rules.
-            - Output must strictly follow the JSON schema. No extra commentary.
+            INSTRUCTIONS
+            - Treat "RETRIEVED DOCUMENTS" as authoritative when present; cite the exact document references you used in "sources".
+            - If documents are missing/insufficient or not provided ("None"), you may use fallback knowledge, but reflect uncertainty in "reasons" and/or set "eligible": null when appropriate.
+            - If required user inputs are missing (e.g., income, age, category, geography), set "eligible": null and list those exact field names in "missing_fields".
+            - If clearly eligible or ineligible, set "eligible" to true/false and provide concise rule-grounded "reasons".
+            - Return only the JSON object defined in the OUTPUT CONTRACT. No extra text.
+
+            OUTPUT
+            Return exactly one JSON object. No preamble. No code fences. No trailing commentary.
             """
 
             raw_response = self.llm_client.run_json(system_prompt, user_prompt)
@@ -100,4 +109,4 @@ class EligibilityChecker:
 
         except Exception as e:
             logger.error(f"EligibilityChecker failed: {e}")
-            raise UdayamitraException("Failed to check eligibility", sys)
+            raise UdayamitraException("Failed to check eligibility", sys)  
