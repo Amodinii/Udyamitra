@@ -3,12 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 
-from .pipeline import Pipeline  # adjust import if needed
+from .pipeline import Pipeline
 from utility.model import ConversationState, Message
+from utility.StateManager import StateManager
 
 app = FastAPI(title="Pipeline API")
 
-# Allow CORS (adjust in production)
+# Allow CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -17,94 +18,87 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global state
-pipeline_instance = None
+# Global conversation state
 conversation_state = ConversationState()
+state_manager = StateManager(initial_state=conversation_state)
 
-# Request schema
+# Request schemas
 class StartRequest(BaseModel):
     user_query: str
 
 class ContinueRequest(BaseModel):
     user_query: str
 
-# POST /start (fresh chat)
+# POST /start (starts a new conversation)
 @app.post("/start")
 async def start_pipeline(request: StartRequest):
-    global pipeline_instance, conversation_state
+    global conversation_state, state_manager
 
-    # Reset memory at start
+    # Reset full state
     conversation_state = ConversationState()
-    conversation_state.messages.append(
-        Message(role="user", content=request.user_query, timestamp=datetime.now())
-    )
+    state_manager = StateManager(initial_state=conversation_state)
+    state_manager.add_message(role="user", content=request.user_query)
 
-    # Initialize and run pipeline with fresh state
-    pipeline_instance = Pipeline(request.user_query, state=conversation_state)
-    output = await pipeline_instance.run()
-
-    print("Pipeline output:", output)  # ✅ Debugging output
-
-    # Safely extract assistant reply
-    if output and "results" in output:
-        result_messages = []
-        for tool_name, result_text in output["results"].items():
-            result_messages.append(f"### Tool used: {tool_name}\n\n{result_text}")
-        assistant_response = "\n\n".join(result_messages)
-
-        # Add assistant message to conversation
-        conversation_state.messages.append(
-            Message(role="assistant", content=assistant_response, timestamp=datetime.now())
-        )
-    else:
-        assistant_response = "I'm sorry, I couldn't generate a response."
+    pipeline = Pipeline(request.user_query, state=state_manager.get_state())
+    output = await pipeline.run()
+    
+    assistant_response = _extract_response_from_results(output)
+    state_manager.add_message(role="assistant", content=assistant_response)
 
     return {
         "message": assistant_response,
-        "stage": pipeline_instance.stage.name,
-        "result": output["results"] if output else None,
-        "state": conversation_state.model_dump()
+        "stage": pipeline.stage.name,
+        "results": output["results"] if output else None,
+        "state": state_manager.get_state().model_dump()
     }
 
-# POST /continue (follow-up query)
+# POST /continue (adds a follow-up turn)
 @app.post("/continue")
 async def continue_pipeline(request: ContinueRequest):
-    global pipeline_instance, conversation_state
+    global conversation_state, state_manager
 
-    # Add follow-up message to history
-    conversation_state.messages.append(
-        Message(role="user", content=request.user_query, timestamp=datetime.now())
-    )
+    state_manager.add_message(role="user", content=request.user_query)
 
-    if pipeline_instance is None:
-        # Fallback: no prior pipeline, create one with current state
-        pipeline_instance = Pipeline(request.user_query, state=conversation_state)
-    else:
-        # Update query and preserve pipeline + state
-        pipeline_instance.user_query = request.user_query
-        pipeline_instance.conversation_state = conversation_state
+    pipeline = Pipeline(request.user_query, state=state_manager.get_state())
+    output = await pipeline.run()
 
-    output = await pipeline_instance.run()
-
-    if output:
-        # Add assistant response from this run
-        assistant_response = output.get("output_text", "")
-        conversation_state.messages.append(
-            Message(role="assistant", content=assistant_response, timestamp=datetime.now())
-        )
-    else:
-        assistant_response = "I'm sorry, something went wrong while continuing."
+    assistant_response = _extract_response_from_results(output)
+    state_manager.add_message(role="assistant", content=assistant_response)
 
     return {
         "message": assistant_response,
-        "stage": pipeline_instance.stage.name,
-        "result": output.get("results") if output else None,
-        "state": conversation_state.model_dump()
+        "stage": pipeline.stage.name,
+        "results": output["results"] if output else None,  # <-- fixed key
+        "state": state_manager.get_state().model_dump()
     }
+
+# Helper function to extract assistant response from tool results
+def _extract_response_from_results(output: dict) -> str:
+    if output and "results" in output:
+        messages = []
+        for tool_name, result_text in output["results"].items():
+            messages.append(f"### Tool used: {tool_name}\n\n{result_text}")
+        return "\n\n".join(messages)
+    return "I'm sorry, I couldn't generate a response."
 
 # GET /status
 @app.get("/status")
 async def get_status():
-    if pipeline_instance is None:
-        return {"message": "No pipeline started yet"}
-    return pipeline_instance.get_status()
+    state = state_manager.get_state()
+    last_tool = state.last_tool_used
+
+    results = {}
+    if last_tool and last_tool in state.tool_memory:
+        tool_data = state.tool_memory[last_tool].data
+        if tool_data:
+            results[last_tool] = {
+                "output_text": state.messages[-2].content if len(state.messages) >= 2 else "No explanation available.",
+                "raw_output": tool_data
+            }
+
+    return {
+        "message": "Active pipeline status",
+        "stage": "COMPLETED" if results else "IN_PROGRESS",  # You can improve this logic if needed
+        "results": results if results else None,
+        "state": state.model_dump()
+    }

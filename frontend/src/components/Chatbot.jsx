@@ -3,12 +3,15 @@ import { useImmer } from 'use-immer';
 import api from '@/api';
 import ChatMessages from '@/components/ChatMessages';
 import ChatInput from '@/components/ChatInput';
+import PipelineStageOverlay from "./PipelineStageOverlay";
+import StateVisualizer from '@/components/StateVisualizer';
+
 
 function Chatbot() {
   const [messages, setMessages] = useImmer([]);
   const [newMessage, setNewMessage] = useState('');
   const [isPolling, setIsPolling] = useState(false);
-  const [conversationState, setConversationState] = useState(null); // 🧠 Track conversation state
+  const [conversationState, setConversationState] = useState(null); // Track conversation state
 
   const isLoading = isPolling;
 
@@ -37,9 +40,11 @@ function Chatbot() {
       if (conversationState) {
         // Follow-up: call /continue
         response = await api.continuePipeline(trimmedMessage, conversationState);
+        console.log(`Follow-up Response from /continue: ${JSON.stringify(response)}`);
       } else {
         // Initial query: call /start
         response = await api.startPipeline(trimmedMessage);
+        console.log(`Initial Response from /start: ${JSON.stringify(response)}`);
       }
 
       // Store and log conversation state
@@ -68,6 +73,7 @@ function Chatbot() {
     const interval = setInterval(async () => {
       try {
         const status = await api.getPipelineStatus();
+        console.log(`Status from /status: ${JSON.stringify(status)}`);
 
         // Save and log updated state
         if (status.state) {
@@ -77,11 +83,14 @@ function Chatbot() {
 
         setMessages(draft => {
           const last = draft[draft.length - 1];
-
           if (status.stage === 'COMPLETED' && status.results) {
+            console.log(`Results: ${JSON.stringify(status.results)}`);
             const formattedContent = Object.entries(status.results)
-              .map(([tool, explanation]) => `### Tool used for the query: ${tool}\n\n${explanation}`)
-              .join('\n\n');
+            .map(([tool, result]) => {
+              const explanation = typeof result === 'string' ? result : result.output_text;
+              return `### Tool used for the query: ${tool}\n\n${explanation}`;
+            })
+            .join('\n\n');
 
             draft[draft.length - 1] = {
               role: 'assistant',
