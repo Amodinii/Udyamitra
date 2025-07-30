@@ -48,6 +48,26 @@ def safe_json_parse(raw_output: str) -> dict:
 def ensure_dict(obj):
     return obj if isinstance(obj, dict) else {"output_text": str(obj)}
 
+# -------------------- ADDED (generic passthrough helpers) --------------------
+def _model_known_fields(schema_class) -> set:
+    """
+    Return the set of top-level field names of the Pydantic model.
+    Supports Pydantic v1 (__fields__) and v2 (model_fields).
+    """
+    if hasattr(schema_class, "__fields__"):     # Pydantic v1
+        return set(schema_class.__fields__.keys())
+    if hasattr(schema_class, "model_fields"):   # Pydantic v2
+        return set(schema_class.model_fields.keys())
+    return set()
+
+def _collect_extras_for_context(task_input: Dict[str, Any], known: set) -> Dict[str, Any]:
+    """
+    Any planner inputs not claimed by top-level schema fields are extras.
+    We route them to context_entities.
+    """
+    return {k: v for k, v in (task_input or {}).items() if k not in known}
+# ---------------------------------------------------------------------------
+
 class ToolExecutor:
     def __init__(self, conversation_state: Optional[Any] = None):
         try:
@@ -159,6 +179,25 @@ class ToolExecutor:
                         user_input=input_data,
                         state=self.conversation_state
                     )
+
+                    # === Generic passthrough: route unknown planner keys -> context_entities ===
+                    try:
+                        known = _model_known_fields(schema_class)
+                        extras = _collect_extras_for_context(task.input, known)
+
+                        # Only merge if the target model actually has context_entities
+                        if extras and ("context_entities" in known):
+                            current_ctx = getattr(full_input, "context_entities", None) or {}
+                            merged_ctx = {**current_ctx, **extras}
+
+                            # Update the pydantic instance with merged context
+                            full_input = full_input.copy(update={"context_entities": merged_ctx})
+
+                            # Also expose to conversation state so downstream tools can reuse it
+                            self.state_manager.update_context_entities(merged_ctx)
+                    except Exception as _e:
+                        logger.warning(f"[extras passthrough] skipped: {_e}")
+                    # === End passthrough ===
 
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
                     wrapped_input = {"schema_dict": full_input.model_dump()}

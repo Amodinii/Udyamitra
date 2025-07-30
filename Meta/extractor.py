@@ -18,6 +18,26 @@ class MetadataExtractor:
             logger.error(f"Failed to initialize MetadataExtractor: {e}")
             raise UdayamitraException("Failed to initialize MetadataExtractor", sys)
 
+    def _extract_embedded_json(self, raw: str) -> dict:
+        """
+        Extract a JSON object from an LLM response that may include prose.
+        Prefers a fenced ```json ... ``` block; otherwise takes the largest {...} block.
+        Raises ValueError if no JSON object can be found/parsed.
+        """
+        # Prefer fenced ```json ... ```
+        fenced = re.search(r"```(?:json)?\s*({.*?})\s*```", raw, flags=re.DOTALL | re.IGNORECASE)
+        if fenced:
+            candidate = fenced.group(1)
+            return json.loads(candidate)
+
+        # Otherwise try the largest { ... } block
+        brace = re.search(r"{.*}", raw, flags=re.DOTALL)
+        if brace:
+            candidate = brace.group(0)
+            return json.loads(candidate)
+
+        raise ValueError("No valid JSON object found in LLM response.")
+
     def extract_metadata(self, query: str, state: ConversationState | None = None) -> Metadata:
         try:
             logger.info(f"Extracting metadata from query: {query}")
@@ -65,13 +85,35 @@ Respond ONLY with the following JSON structure:
             raw_output = self.llm_client.run_chat(system_prompt, contextual_query)
             logger.info(f"Raw output from LLM:\n{raw_output}")
 
-            # Using safe_json_parse
-            metadata_dict = safe_json_parse(raw_output)
+            # 1) Try to extract an embedded JSON object from mixed prose.
+            try:
+                metadata_dict = self._extract_embedded_json(raw_output)
+            except Exception as ex:
+                logger.warning(f"[MetadataExtractor] Embedded JSON not found or invalid: {ex}. Falling back to safe_json_parse.")
+                # 2) Fallback to safe_json_parse (may return {"output_text": "..."}).
+                metadata_dict = safe_json_parse(raw_output)
+                # If fallback returned a non-JSON structure (e.g., {"output_text": "..."}), error out clearly.
+                if not isinstance(metadata_dict, dict) or "user_profile" not in metadata_dict:
+                    raise UdayamitraException(
+                        "Metadata extraction failed: could not parse a valid JSON object with required keys.",
+                        sys
+                    )
+
+            # --- Normalize entities.scheme: handle list -> string ---
+            entities = metadata_dict.get("entities", {}) or {}
+            scheme_val = entities.get("scheme")
+            if isinstance(scheme_val, list) and len(scheme_val) == 1:
+                entities["scheme"] = scheme_val[0]
+            metadata_dict["entities"] = entities
 
             logger.info(f"Metadata extracted:\n{json.dumps(metadata_dict, indent=2)}")
 
+            # --- Validate required keys early for clearer errors ---
+            if "user_profile" not in metadata_dict or "intents" not in metadata_dict or "entities" not in metadata_dict:
+                raise UdayamitraException("Metadata JSON missing required keys (intents/entities/user_profile).", sys)
+
             # Normalize location
-            raw_loc = metadata_dict["user_profile"].get("location", "").strip().lower()
+            raw_loc = (metadata_dict["user_profile"].get("location") or "").strip().lower()
             if not raw_loc or raw_loc in ["unknown", "n/a", "india"]:
                 normalized_loc = {
                     "raw": raw_loc or "India",
@@ -99,6 +141,9 @@ Respond ONLY with the following JSON structure:
 
             return metadata
 
+        except UdayamitraException:
+            # already logged with clear message
+            raise
         except Exception as e:
             logger.error(f"Metadata extraction failed: {e}")
             raise UdayamitraException(f"Metadata extraction failed: {e}", sys)
