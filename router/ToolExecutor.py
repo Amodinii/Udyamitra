@@ -25,6 +25,28 @@ from utility.LLM import LLMClient
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
+def safe_json_parse(raw_output: str) -> dict:
+    import json, re
+
+    raw_output = re.sub(r"```(?:json)?", "", raw_output.strip(), flags=re.IGNORECASE)
+
+    try:
+        return json.loads(raw_output)
+    except json.JSONDecodeError:
+        pass
+
+    cleaned = raw_output.replace("'", '"')
+    cleaned = re.sub(r",\s*([}\]])", r"\\1", cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError as e:
+        logger.warning(f"[safe_json_parse] JSON still invalid: {e}")
+        logger.warning("[safe_json_parse] Returning fallback raw_output string.")
+        return {"output_text": raw_output}  # fallback
+
+def ensure_dict(obj):
+    return obj if isinstance(obj, dict) else {"output_text": str(obj)}
 
 class ToolExecutor:
     def __init__(self, conversation_state: Optional[Any] = None):
@@ -85,19 +107,21 @@ class ToolExecutor:
 
     def _resolve_input(self, task: ToolTask, previous_outputs: Dict[str, Any]) -> Dict[str, Any]:
         if task.input_from:
-            referenced_output = previous_outputs.get(task.input_from)
-            if not referenced_output:
+            referenced = previous_outputs.get(task.input_from)
+            if not referenced:
                 raise UdayamitraException(
                     f"No output found from '{task.input_from}' to resolve input for '{task.tool_name}'", sys
                 )
-            return {"output_text": referenced_output.get("output_text")}
+            if isinstance(referenced, dict):
+                return {"output_text": referenced.get("output_text", str(referenced))}
+            return {"output_text": str(referenced)}
         return task.input
 
     @staticmethod
     def format_explanation(raw: str) -> str:
         cleaned = raw.strip()
-        if "\\n" in cleaned:
-            cleaned = cleaned.replace("\\n", "\n")
+        if "\n" in cleaned:
+            cleaned = cleaned.replace("\n", "\n")
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
         cleaned = cleaned.replace("* ", "• ")
         if not cleaned.lower().startswith("here's a simple explanation"):
@@ -112,7 +136,10 @@ class ToolExecutor:
     ) -> Union[str, Dict[str, Any]]:
         results: Dict[str, Any] = {}
 
-        # Add user message to conversation
+        # Sanitize metadata.entities
+        if isinstance(metadata.entities.get("scheme"), list):
+            metadata.entities["scheme"] = metadata.entities["scheme"][0]
+
         self.state_manager.add_message(role="user", content=metadata.query)
 
         if plan.execution_type != "sequential":
@@ -139,12 +166,8 @@ class ToolExecutor:
 
                     parsed = {}
                     if hasattr(response, "content") and response.content:
-                        try:
-                            parsed = json.loads(response.content[0].text)
-                        except Exception:
-                            parsed = {"output_text": response.content[0].text}
+                        parsed = ensure_dict(safe_json_parse(response.content[0].text))
 
-                    # LLM Explanation
                     system_prompt = '''You are a helpful assistant that explains the output of a tool to the user, in an easy, detailed explainable way. 
 Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
 - Make sure you mention the sources at the end of the explanation.
@@ -162,15 +185,16 @@ Ensure you explain all the keys in the output. Dont summarize it, convert it to 
                             final_explanation = final_explanation.replace("\\n", "\n")
 
                     formatted = self.format_explanation(raw=final_explanation)
-                    results[task.tool_name] = formatted
+                    results[task.tool_name] = {
+                        "output_text": formatted,
+                        "raw_output": parsed
+                    }
 
-                    # ✅ Update state using StateManager
-                    self.state_manager.add_message(role="tool", content=formatted, tool_used=task.tool_name)
                     self.state_manager.set_last_tool(task.tool_name)
-                    self.state_manager.set_focus(metadata.query)
                     self.state_manager.set_tool_memory(task.tool_name, parsed)
+                    self.state_manager.add_message(role="tool", content=formatted, tool_used=task.tool_name)
+                    self.state_manager.set_last_scheme(metadata.entities.get("scheme", ""))
 
-                    # ✅ Merge metadata.entities + user_profile into context_entities
                     merged_context = {
                         **metadata.entities,
                         **(metadata.user_profile.model_dump() if metadata.user_profile else {})
@@ -185,6 +209,7 @@ Ensure you explain all the keys in the output. Dont summarize it, convert it to 
             return next(iter(results.values()))
 
         logger.debug(f"[FINAL STATE BEFORE RETURN] {self.conversation_state.model_dump_json(indent=2)}")
+        logger.info(f"Final Execution Results:\n{json.dumps(results, indent=2)}")
         return results if results else "No tools could be executed successfully."
 
     def get_state(self):
