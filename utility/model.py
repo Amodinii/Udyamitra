@@ -89,8 +89,16 @@ class ToolMemory(BaseModel):
 
 class ConversationState(BaseModel):
     messages: List[Message] = []
-    current_focus: Optional[str] = None  # Scheme name or topic
-    context_entities: Dict[str, Any] = {}  # General info extracted: location, age, gender, etc.
-    last_tool_used: Optional[str] = None
-    tool_memory: Dict[str, ToolMemory] = {}  # Memory per tool
+    
+    # Core memory
     user_profile: Optional[UserProfile] = None
+    context_entities: Dict[str, Any] = {}
+
+    # Tool-related memory
+    last_tool_used: Optional[str] = None
+    last_intent: Optional[str] = None
+    last_scheme_mentioned: Optional[str] = None 
+    tool_memory: Dict[str, ToolMemory] = {}
+
+    # Dynamic state
+    missing_inputs: Dict[str, List[str]] = {}  # tool_name -> list of missing fields

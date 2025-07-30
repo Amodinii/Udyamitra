@@ -3,6 +3,7 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
 from Meta.location_normalizer import LocationNormalizer
+from router.ToolExecutor import safe_json_parse
 import json
 import sys
 import re
@@ -48,14 +49,14 @@ Your job is to extract the following structured fields from a user query:
 
 Respond ONLY with the following JSON structure:
 {
-  "intents": [...],
-  "entities": {
-    "scheme": "..."
-  },
-  "user_profile": {
-    "user_type": "...",
-    "location": "..."
-  }
+    "intents": [...],
+    "entities": {
+        "scheme": "..."
+    },
+    "user_profile": {
+        "user_type": "...",
+        "location": "..."
+    }
 }
 
 - Make sure all keys are enclosed in double quotes and properly comma-separated.
@@ -64,17 +65,8 @@ Respond ONLY with the following JSON structure:
             raw_output = self.llm_client.run_chat(system_prompt, contextual_query)
             logger.info(f"Raw output from LLM:\n{raw_output}")
 
-            # Clean output to strip ```json and ``` wrappers if present
-            def clean_json(raw: str) -> str:
-                raw = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE)
-                raw = raw.replace("```", "").strip()
-                json_match = re.search(r"\{.*\}", raw, re.DOTALL)
-                if not json_match:
-                    raise ValueError("No valid JSON object found in LLM response")
-                return json_match.group(0)
-
-            cleaned_json = clean_json(raw_output)
-            metadata_dict = json.loads(cleaned_json)
+            # Using safe_json_parse
+            metadata_dict = safe_json_parse(raw_output)
 
             logger.info(f"Metadata extracted:\n{json.dumps(metadata_dict, indent=2)}")
 

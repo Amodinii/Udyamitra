@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from utility.model import Metadata, ExecutionPlan, ToolTask, ConversationState
 from utility.LLM import LLMClient
+from router.ToolExecutor import safe_json_parse
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 
@@ -68,15 +69,8 @@ Make sure all keys are enclosed in double quotes and properly comma-separated.
             raw_output = self.llm_client.run_chat(system_prompt, user_prompt)
             logger.info(f"Raw output from LLM:\n{raw_output}")
 
-            # Try extracting JSON from output
-            json_blocks = re.findall(r'```json\s*(\{.*?\})\s*```', raw_output, re.DOTALL)
-            if not json_blocks:
-                json_blocks = re.findall(r'(\{.*\})', raw_output, re.DOTALL)
-            if not json_blocks:
-                raise ValueError("No valid JSON block found in LLM response.")
-
-            json_str = json_blocks[-1]
-            plan_dict = json.loads(json_str)
+            # using safe_json_parse to handle invalid JSON
+            plan_dict = safe_json_parse(raw_output)
 
             logger.info(f"Parsed execution plan:\n{json.dumps(plan_dict, indent=2)}")
 
