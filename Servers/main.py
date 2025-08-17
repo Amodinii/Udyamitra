@@ -26,7 +26,7 @@ ALL_MCP_SERVERS = {
     "/explain-scheme": scheme_explainer_mcp,
     "/check-eligibility": eligibility_checker_mcp,
     "/retrieve-scheme": scheme_db_retriever_mcp,
-    "/investor-insight": investor_insight_mcp,
+    "/generate-insight": investor_insight_mcp,
 }
 
 @contextlib.asynccontextmanager
