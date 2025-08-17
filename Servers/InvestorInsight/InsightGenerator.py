@@ -10,6 +10,9 @@ from utility.LLM import LLMClient
 from sentence_transformers.cross_encoder import CrossEncoder
 from typing import List, Dict
 
+# Import the Pydantic models for input and output
+from model import InsightGeneratorInput, InsightGeneratorOutput, RetrievedDoc
+
 class InsightGenerator:
     JSON_FORMAT_INSTRUCTIONS = """
     {
@@ -66,12 +69,15 @@ class InsightGenerator:
             
         return sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
 
-    def generate_insight(self, user_query: str, user_profile: dict, retrieved_documents: List[Dict] = None):
+    def generate_insight(self, data: InsightGeneratorInput) -> InsightGeneratorOutput:
         try:
+            # Convert Pydantic document models to simple dicts for processing
+            docs_as_dicts = [doc.model_dump() for doc in data.retrieved_documents]
+
             # Rerank the retrieved documents before using them
-            if retrieved_documents:
-                logger.info(f"Reranking {len(retrieved_documents)} documents for query: '{user_query}'")
-                reranked_docs = self._rerank_documents(user_query, retrieved_documents)
+            if docs_as_dicts:
+                logger.info(f"Reranking {len(docs_as_dicts)} documents for query: '{data.user_query}'")
+                reranked_docs = self._rerank_documents(data.user_query, docs_as_dicts)
                 # Create the final context string from the reranked list
                 context_string = "\n\n".join([doc.get('content', '') for doc in reranked_docs])
             else:
@@ -90,10 +96,10 @@ class InsightGenerator:
             Generate a personalized investment insight based on the user's request and the provided context. Follow the required JSON output format precisely.
 
             === USER QUERY ===
-            {user_query}
+            {data.user_query}
 
             === USER PROFILE ===
-            {json.dumps(user_profile, indent=2)}
+            {json.dumps(data.user_profile.model_dump(), indent=2)}
 
             === RETRIEVED DOCUMENTS (Primary Source of Truth, reranked for relevance) ===
             {context_string if context_string else "No documents provided."}
@@ -102,8 +108,11 @@ class InsightGenerator:
             {self.JSON_FORMAT_INSTRUCTIONS}
             """
 
-            response = self.llm_client.run_json(system_prompt, user_prompt)
-            return response
+            # Assuming run_json returns a dictionary that matches the output schema
+            response_dict = self.llm_client.run_json(system_prompt, user_prompt)
+
+            # Validate and structure the final output using the Pydantic model
+            return InsightGeneratorOutput(**response_dict)
         
         except Exception as e:
             logger.error(f"InsightGenerator failed: {e}")
