@@ -51,6 +51,7 @@ async def generate_insight(query: dict, documents: Optional[str] = None):
         logger.info(f"[Explainer] Combined content length: {len(combined_content)}")
 
         result = insight_generator.generate_insight(
+            query,
             retrieved_documents=combined_content or None
         )
         return result

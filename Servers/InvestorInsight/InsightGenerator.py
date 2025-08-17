@@ -7,6 +7,8 @@ import json
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.LLM import LLMClient
+from sentence_transformers.cross_encoder import CrossEncoder
+from typing import List, Dict
 
 class InsightGenerator:
     JSON_FORMAT_INSTRUCTIONS = """
@@ -38,12 +40,43 @@ class InsightGenerator:
             logger.info("Starting InsightGenerator...")
             logger.info(f"Initializing InsightGenerator with model: {model}")
             self.llm_client = LLMClient(model=model)
+            
+            # Loads the reranker model into memory once at startup
+            logger.info("Loading BAAI/bge-reranker-large model...")
+            self.reranker_model = CrossEncoder('BAAI/bge-reranker-large')
+            logger.info("All models loaded successfully.")
+            
         except Exception as e:
             logger.error(f"Failed to initialize InsightGenerator: {e}")
             raise UdayamitraException("Failed to initialize InsightGenerator", sys)
+            
+    def _rerank_documents(self, query: str, documents: List[Dict]) -> List[Dict]:
+        """A private function to rerank a small list of documents."""
+        if not documents:
+            return []
+            
+        # Assumes each dict in documents has a 'content' key
+        doc_contents = [doc.get('content', '') for doc in documents]
+        model_input_pairs = [[query, content] for content in doc_contents]
         
-    def generate_insight(self, user_query: str, user_profile: dict, retrieved_documents: str = None):
+        scores = self.reranker_model.predict(model_input_pairs)
+        
+        for doc, score in zip(documents, scores):
+            doc['rerank_score'] = float(score)
+            
+        return sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
+
+    def generate_insight(self, user_query: str, user_profile: dict, retrieved_documents: List[Dict] = None):
         try:
+            # Rerank the retrieved documents before using them
+            if retrieved_documents:
+                logger.info(f"Reranking {len(retrieved_documents)} documents for query: '{user_query}'")
+                reranked_docs = self._rerank_documents(user_query, retrieved_documents)
+                # Create the final context string from the reranked list
+                context_string = "\n\n".join([doc.get('content', '') for doc in reranked_docs])
+            else:
+                context_string = None
+
             system_prompt = """
             You are 'InsightBot', an expert financial analyst AI assistant. Your purpose is to provide clear, data-driven, and personalized investment insights to investors.
 
@@ -62,11 +95,11 @@ class InsightGenerator:
             === USER PROFILE ===
             {json.dumps(user_profile, indent=2)}
 
-            === RETRIEVED DOCUMENTS (Primary Source of Truth) ===
-            {retrieved_documents if retrieved_documents else "No documents provided."}
+            === RETRIEVED DOCUMENTS (Primary Source of Truth, reranked for relevance) ===
+            {context_string if context_string else "No documents provided."}
 
             === REQUIRED JSON OUTPUT FORMAT ===
-            {JSON_FORMAT_INSTRUCTIONS}
+            {self.JSON_FORMAT_INSTRUCTIONS}
             """
 
             response = self.llm_client.run_json(system_prompt, user_prompt)
