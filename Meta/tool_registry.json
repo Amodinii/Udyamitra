@@ -46,7 +46,14 @@
     "intents": [
       "explain",
       "how to ensure",
-      "measures"
+      "measures",
+      "investments",
+      "investor",
+      "government investment",
+      "insights",
+      "generate_insight",
+      "generate_insights",
+      "generate_investor_insight"
     ],
     "endpoint": "http://127.0.0.1:10000/generate-insight/mcp/",
     "input_schema": "InsightGeneratorInput",
