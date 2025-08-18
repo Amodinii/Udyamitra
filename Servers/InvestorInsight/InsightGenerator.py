@@ -13,8 +13,6 @@ from typing import List, Dict
 # Import the Pydantic models for input and output
 from utility.model import InsightGeneratorInput, InsightGeneratorOutput, RetrievedDoc
 
-# Import the Pydantic models for input and output
-from model import InsightGeneratorInput, InsightGeneratorOutput, RetrievedDoc
 
 class InsightGenerator:
     JSON_FORMAT_INSTRUCTIONS = """

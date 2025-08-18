@@ -35,7 +35,7 @@ async def generate_insight(schema_dict: dict) -> InsightGeneratorOutput:
                 RETRIEVER_TOOL_NAME,
                 {
                     "query": schema_dict['user_query'],
-                    "caller_tool": mcp.name,
+                    "caller_tool": "InsightGenerator",
                     "top_k": 5
                 }
             )
