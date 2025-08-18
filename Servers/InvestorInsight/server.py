@@ -5,64 +5,64 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from utility.register_tools import generate_tool_registry_entry, register_tool
 from fastmcp import Client
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 from utility.model import UserProfile, RetrievedDoc, InsightGeneratorInput, InsightGeneratorOutput
-from pydantic import BaseModel
 
 load_dotenv()
 
-mcp = FastMCP("InsightGenerator", stateless_http = True)
+mcp = FastMCP("InsightGenerator", stateless_http=True)
 RETRIEVER_URL = "http://127.0.0.1:10000/retrieve-scheme/mcp"
 RETRIEVER_TOOL_NAME = "retrieve_documents"
 
-class GenerateInsightToolInput(BaseModel):
-    user_query: str
-    user_profile: UserProfile
-
 @mcp.tool()
-async def generate_insight(schema_dict: dict) -> InsightGeneratorOutput:
+async def generate_insight(schema_dict: dict, documents: Optional[str] = None) -> dict:
     try:
         logger.info(f"[InsightGenerator] Received request: {schema_dict}")
-        logger.info(f"[InsightGenerator] query type is: {type(schema_dict)}")
-        logger.info("Received request to generate insights")
-
         insight_generator = InsightGenerator()
 
-        logger.info(f"Querying retriever with: '{schema_dict['user_query']}'")
+        # Reshape the input dictionary into the required Pydantic model for the user profile
+        user_profile_obj = UserProfile(**schema_dict.get("user_profile", {}))
+
+        query_text = schema_dict.get("user_query", "")
+        logger.info(f"Querying retriever with: '{query_text}'")
+        
         async with Client(RETRIEVER_URL) as retriever_client:
             response = await retriever_client.call_tool(
                 RETRIEVER_TOOL_NAME,
                 {
-                    "query": schema_dict['user_query'],
+                    "query": query_text,
                     "caller_tool": mcp.name,
                     "top_k": 5
                 }
             )
 
-        logger.debug(f"Retriever response: {response}")
-        logger.info(f"Retrieved response type: {type(response.data)}")
         docs_from_retriever = response.data.result
         if not isinstance(docs_from_retriever, list):
             logger.warning("Retrieved documents were not a list; resetting to []")
             docs_from_retriever = []
         
-        validated_docs = [RetrievedDoc(**doc) for doc in docs_from_retriever]
-        logger.info(f"Retrieved and validated {len(validated_docs)} documents")
+        # --- Applying the exact logic from your reference code ---
+        logger.info(f"[InsightGenerator] Retrieved {len(docs_from_retriever)} documents.")
 
-        generator_input = InsightGeneratorInput(
-            user_query=schema_dict['user_query'],
-            user_profile=schema_dict['user_profile'],
-            retrieved_documents=validated_docs
+        doc_dicts = [vars(d) for d in docs_from_retriever]
+        combined_content = "\n\n".join(doc.get("content", "") for doc in doc_dicts)
+        logger.info(f"[InsightGenerator] Combined content length: {len(combined_content)}")
+        # --- End of reference logic ---
+
+        # Call the core logic with the reshaped data, matching the reference pattern
+        result = insight_generator.generate_insight(
+            user_query=query_text,
+            user_profile=user_profile_obj.model_dump(), # Pass as dict, like in SchemeExplainer
+            retrieved_documents=combined_content or None
         )
-
-        result = insight_generator.generate_insight(data=generator_input)
         
         return result
 
     except Exception as e:
         logger.error("Failed to generate insight", exc_info=True)
         raise UdayamitraException("Failed to generate insight", sys)
+
 
 if __name__ == "__main__":
     tool_info = generate_tool_registry_entry()
