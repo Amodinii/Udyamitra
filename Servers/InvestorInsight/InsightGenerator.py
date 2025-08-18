@@ -69,20 +69,8 @@ class InsightGenerator:
             
         return sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
 
-    def generate_insight(self, data: InsightGeneratorInput) -> InsightGeneratorOutput:
+    def generate_insight(self, user_query: str, user_profile: dict, retrieved_documents: str = None) -> dict:
         try:
-            # Convert Pydantic document models to simple dicts for processing
-            docs_as_dicts = [doc.model_dump() for doc in data.retrieved_documents]
-
-            # Rerank the retrieved documents before using them
-            if docs_as_dicts:
-                logger.info(f"Reranking {len(docs_as_dicts)} documents for query: '{data.user_query}'")
-                reranked_docs = self._rerank_documents(data.user_query, docs_as_dicts)
-                # Create the final context string from the reranked list
-                context_string = "\n\n".join([doc.get('content', '') for doc in reranked_docs])
-            else:
-                context_string = None
-
             system_prompt = """
             You are 'InsightBot', an expert financial analyst AI assistant. Your purpose is to provide clear, data-driven, and personalized investment insights to investors.
 
@@ -96,23 +84,23 @@ class InsightGenerator:
             Generate a personalized investment insight based on the user's request and the provided context. Follow the required JSON output format precisely.
 
             === USER QUERY ===
-            {data.user_query}
+            {user_query}
 
             === USER PROFILE ===
-            {json.dumps(data.user_profile.model_dump(), indent=2)}
+            {json.dumps(user_profile, indent=2)}
 
-            === RETRIEVED DOCUMENTS (Primary Source of Truth, reranked for relevance) ===
-            {context_string if context_string else "No documents provided."}
+            === RETRIEVED DOCUMENTS (Primary Source of Truth) ===
+            {retrieved_documents if retrieved_documents else "No documents provided."}
 
             === REQUIRED JSON OUTPUT FORMAT ===
             {self.JSON_FORMAT_INSTRUCTIONS}
             """
 
-            # Assuming run_json returns a dictionary that matches the output schema
             response_dict = self.llm_client.run_json(system_prompt, user_prompt)
-
-            # Validate and structure the final output using the Pydantic model
-            return InsightGeneratorOutput(**response_dict)
+            
+            # Validate and return as a dictionary
+            validated_output = InsightGeneratorOutput(**response_dict)
+            return validated_output.model_dump()
         
         except Exception as e:
             logger.error(f"InsightGenerator failed: {e}")
