@@ -19,21 +19,21 @@ logger.info("Initializing embeddings and vector stores for Retriever…")
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 vector_stores = {
-    "investor_policies": AstraDBVectorStore(
+    "Investor_policies": AstraDBVectorStore(
         embedding=embeddings,
         collection_name="Investor_policies", # Collection for InsightGenerator
         namespace=os.getenv("ASTRA_DB_KEYSPACE"),
         api_endpoint=ASTRA_DB_ENDPOINT,
         token=ASTRA_DB_TOKEN,
     ),
-    "scheme_chunks": AstraDBVectorStore(
+    "Scheme_chunks": AstraDBVectorStore(
         embedding=embeddings,
         collection_name="scheme_chunks", # Collection for SchemeExplainer
         namespace=os.getenv("ASTRA_DB_KEYSPACE"),
         api_endpoint=ASTRA_DB_ENDPOINT,
         token=ASTRA_DB_TOKEN,
     ),
-    "schemes_metadata": AstraDBVectorStore(
+    "Schemes_metadata": AstraDBVectorStore(
         embedding=embeddings,
         collection_name="Schemes_metadata", # Kept for other potential uses
         namespace=os.getenv("ASTRA_DB_KEYSPACE"),
