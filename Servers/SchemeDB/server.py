@@ -45,7 +45,8 @@ logger.info("Retriever vector stores ready.")
 
 COLLECTION_MAP = {
     "InsightGenerator": "Investor_policies",
-    "SchemeExplainer": "Scheme_chunks"
+    "SchemeExplainer": "Scheme_chunks",
+    "EligibilityChecker": "Scheme_chunks"
 }
 
 mcp = FastMCP("SchemeDB", stateless_http=True)
