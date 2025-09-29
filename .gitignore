@@ -212,3 +212,4 @@ output/
 output.json
 pipeline_log.txt
 test.py
+data/secure-connect-adb.zip

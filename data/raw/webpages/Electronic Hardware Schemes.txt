@@ -1,0 +1,72 @@
+Introduction
+Special schemes are available for setting up Export Oriented Units for the Electronics Hardware Sector. Various incentives and concessions are available under these schemes. The salient features of EOU, EHTP, STP and SEZ schemes are tabulated here.
+
+Scheme Details
+1
+Salient features of EOU, EHTP, STP and SEZ schemes
+
+Benefits	EHTP/STP/EOU Unit	SEZ Unit
+Foreign Equity permissible	100% FDI investment permitted through automatic route	100% FDI investment permitted through automatic route
+Duty free imports/ domestic procurement permissible	Capital goods, Raw materials, Components and other inputs	All goods for development, operation and maintenance
+Income Tax Benefit	Export profits 100% tax-exempt under Sections 10A/10B of the Income Tax Act (up to 31st March 2011)	100% Income Tax exemption on export profits under Section 10AA of the Income Tax Act for 5 years, 50% for next 5 years thereafter and 50% of ploughed back export profit for next 5 years
+Export Obligation	Unit shall be a positive Net Foreign Exchange (NFE) Earner. Supplies of ITA-1 items manufactured by these units in the Domestic Tariff Area (DTA) shall be counted towards fulfillment of export obligation	Unit shall be a positive Net Foreign Exchange (NFE) Earner. Supplies of ITA-1 items manufactured by these units in the Domestic Tariff Area (DTA) shall be counted towards fulfillment of export obligation
+DTA Sales	DTA sales permissible up to 50% of FOB value of exports, subject to fulfillment of positive NFE, on payment of concessional duties (50% of basic customs duty and full excise duty). DTA sales beyond this entitlement are permissible against payment of full duties provided the unit has achieved positive NFE.	DTA sales permissible on payment of full duties. However, the unit is required to be a positive Net Foreign Exchange (NFE) Earner over the five year period of its operation.
+Central Sales Tax	Refundable	Exempted
+Supplies from DTA	Deemed Export	Physical Export
+2
+Special Economic Zones (SEZ) Scheme
+
+As per the “Special Economic Zones Rules, 2006” notified by the Department of Commerce, in case an SEZ is proposed to be set up exclusively for electronics hardware and software, including information technology enabled services, the area shall be ten hectares or more with a minimum built up processing area of one lakh square meters.
+
+3
+Electronics Hardware Technology Park (EHTP) Scheme
+
+The details of EOU/EHTP schemes are available in Chapter-6 of India’s Foreign Trade Policy and Procedures on the website of the Department of Commerce, Ministry of Commerce & Industry. Details pertaining to SEZ scheme are also available on this website.
+
+4
+Export Promotion Capital Goods (EPCG) Scheme
+
+The Zero duty EPCG Scheme is available to exporters of electronic products. It allows import of capital goods for pre-production, production and post-production (including CKD/SKD thereof as well as computer software systems) at zero% customs duty, subject to an export obligation equivalent to 6 times of duty saved on capital goods imported under EPCG scheme, to be fulfilled in 6 years reckoned from Authorization issue-date.
+
+5
+Duty Exemption and Remission Schemes
+
+Duty exemption schemes enable duty free import of inputs required for export production. Duty exemption schemes consist of:
+
+Advance Authorization scheme
+Duty Free Import Authorization (DFIA) scheme
+Duty Remission Scheme enables post export replenishment / remission of duty on inputs used in export product. Duty Remission Schemes consist of:
+
+Duty Entitlement Passbook (DEPB) Scheme
+Duty Drawback (DBK) Scheme
+The details of these schemes are available in Chapter-4 of India’s Foreign Trade Policy and Procedures on the website of the Department of Commerce, Ministry of Commerce & Industry (https://commerce.gov.in/)
+
+6
+Deemed Exports
+
+“Deemed Exports” refer to those transactions in which the goods supplied do not leave the country, and the payment for such supplies is received either in Indian rupees or in free foreign exchange. The following categories of supply of goods by the main/ sub-contractors are regarded as “Deemed Exports” under the Foreign Trade Policy, provided the goods are manufactured in India:
+
+Supply of goods against Advance Authorization/Advance Authorization for annual requirement/DFIA
+Supply of goods to Export Oriented Units (EOUs) / Software Technology Park (STP) units / Electronic Hardware Technology Park (EHTP) units / Biotechnology Park (BTP) units
+Supply of capital goods to Export Promotion Capital Goods (EPCG) Authorization holders
+Supply of goods to projects financed by multilateral or bilateral Agencies/Funds as notified by the Department of Economic Affairs, Ministry of Finance under International Competitive Bidding (ICB) in accordance with the procedures of those Agencies/Funds, where the legal agreements provide for tender evaluation without including customs duty
+Supply of capital goods, including in unassembled/disassembled condition as well as plants, machinery, accessories, tools, dies and such goods which are used for installation purposes till the stage of commercial production, and spares to the extent of 10% of the FOR value to fertilizer plants
+Supply of goods to any project or purpose in respect of which the Ministry of Finance, by a notification, permits the import of such goods at zero customs duty
+Supply of goods to the power projects and refineries not covered in (6) above
+Supply of marine freight containers by 100% EOU (Domestic freight containers – manufacturers) provided the said containers are exported out of India within 6 months or such further period as permitted by the customs:
+
+Supply to projects funded by UN agencies
+Supply of goods to nuclear power projects through competitive bidding as opposed to ICB.
+The benefits of deemed exports shall be available under paragraph (4), (5), (6) and (7) only if the supply is made under the procedure of ICB.
+
+7
+Benefits for Deemed Exports
+
+ 
+
+Deemed exports shall be eligible for any/all of the following benefits in respect of manufacture and supply of goods qualifying as deemed exports subject to the terms and conditions as given in the Chapter-8 of Handbook of Procedures (Vol. I), 2009-2014 of the Department of Commerce, Ministry of Commerce & Industry:
+
+Advance Authorization/Advance Authorization for annual requirement/DFIA
+Deemed Export Drawback.
+Exemption from terminal excise duty where supplies are made against ICB. In other cases, refund of terminal excise duty will be given.
+The details of “Deemed Exports” scheme are available in Chapter-8 of India’s Foreign Trade Policy and Procedures on the website of the Department of Commerce, Ministry of Commerce & Industry.
