@@ -1,6 +1,6 @@
+import os
 import sys
 import argparse
-import uvicorn  # Import the uvicorn library
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 from typing import Optional
@@ -11,11 +11,8 @@ from Exception.exception import UdayamitraException
 from utility.model import UserProfile
 from utility.register_tools import generate_tool_registry_entry, register_tool
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Define the MCP server for this specific tool
-# This object is a standard ASGI application that uvicorn can run
 mcp = FastMCP("AnalysisGenerator", stateless_http=True)
 
 @mcp.tool()
@@ -45,16 +42,18 @@ async def generate_analysis(schema_dict: dict) -> dict:
 
 
 if __name__ == "__main__":
-    # Standard argument parsing to get host and port
+    # 1. Get the port from the command line
     parser = argparse.ArgumentParser(description="Run the AnalysisGenerator MCP Server.")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to run the server on.")
     parser.add_argument("--port", type=int, default=8001, help="Port to run the server on.")
     args = parser.parse_args()
 
-    # Register the tool (if your framework requires it)
+    # 2. Set the environment variable for the MCP server to read
+    os.environ['MCP_PORT'] = str(args.port)
+    os.environ['MCP_HOST'] = '127.0.0.1'
+
+    # 3. Register the tool
     #tool_info = generate_tool_registry_entry()
     #register_tool(tool_info)
     
-    # --- FIXED: Use uvicorn to run the server directly ---
-    # This gives us full control over the host and port, bypassing the limited mcp.run()
-    uvicorn.run(mcp, host=args.host, port=args.port)
+    # 4. Run the server, which will pick up the port from the environment variable
+    mcp.run(transport='streamable-http')

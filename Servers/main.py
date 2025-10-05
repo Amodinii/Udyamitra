@@ -1,8 +1,3 @@
-'''
-main.py - This is the main entry point for the Udayamitra server.
-We are providing all our tools and database here as MCP servers.
-'''
-
 import os
 import sys
 import contextlib
@@ -21,12 +16,14 @@ from Servers.SchemeExplainer.server import mcp as scheme_explainer_mcp
 from Servers.EligibilityChecker.server import mcp as eligibility_checker_mcp
 from Servers.SchemeDB.server import mcp as scheme_db_retriever_mcp
 from Servers.InvestorInsight.server import mcp as investor_insight_mcp
+from Servers.AnalysisGenerator.server import mcp as analysis_generator_mcp
 
 ALL_MCP_SERVERS = {
     "/explain-scheme": scheme_explainer_mcp,
     "/check-eligibility": eligibility_checker_mcp,
     "/retrieve-scheme": scheme_db_retriever_mcp,
     "/generate-insight": investor_insight_mcp,
+    "/generate-analysis": analysis_generator_mcp,
 }
 
 @contextlib.asynccontextmanager
@@ -49,10 +46,8 @@ try:
     server.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "http://localhost:6274",
-            "http://127.0.0.1:6274",
-            "http://localhost:6277",
-            "http://127.0.0.1:6277"
+            "http://localhost:6274", "http://127.0.0.1:6274",
+            "http://localhost:6277", "http://127.0.0.1:6277"
         ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -64,21 +59,14 @@ except Exception as e:
     raise UdayamitraException("Failed to create FastAPI instance", sys)
 
 # Health and config endpoints
-@server.options("/health")
 @server.get("/health")
 async def health_check():
     return {"status": "ok"}
 
-@server.options("/config")
 @server.get("/config")
 async def config():
-    return {
-        "message": "Udayamitra MCP Server Configuration",
-        "version": "1.0.0",
-        "endpoints": list(ALL_MCP_SERVERS.keys())
-    }
+    return {"message": "Udayamitra MCP Server Configuration", "endpoints": list(ALL_MCP_SERVERS.keys())}
 
-@server.options("/")
 @server.get("/")
 async def root():
     return {"message": "Udayamitra MCP Server is running", "version": "1.0.0"}
@@ -93,7 +81,6 @@ async def proxy_mcp(request: Request):
     try:
         body = await request.body()
         headers = {key: value for key, value in request.headers.items() if key.lower() != "host"}
-
         async with httpx.AsyncClient() as client:
             resp = await client.post(target_url, content=body, headers=headers)
             return Response(
