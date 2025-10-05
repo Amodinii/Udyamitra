@@ -1,0 +1,24 @@
+Special Credit Linked Captial Subsidy Scheme
+Description:-
+Special Credit Linked Capital Subsidy Scheme (SCLCSS) component, introduced under the National SC-ST Hub scheme with an objective to promote new enterprises and support the existing enterprises in their expansion for enhanced participation of SC/ST entrepreneurs in public procurement.
+
+Nature of assistance:
+To ease the access to latest technology, under SCLCSS, there is a provision of 25% subsidy to the SC/ST MSEs for procurement of Plant & Machinery/ Equipment through institutional credit (bank loan) with the overall ceiling of Rs. 25 Lacs on the subsidy. SCLCSS, is applicable for the purchase of new Plant & Machinery / Equipment eligible for Term Loan from the Prime Lending Institutions (PLIs) for all manufacturing sectors and service sectors as brought out in the National Industrial Classification (NIC) code respectively on which banks/financial institutions are offering term loan,
+subject to consent/NOC from Pollution Control Board (wherever applicable).
+
+Who can be benefitted:
+Sole Proprietorships, Partnerships, Co-operative societies, Private and LLP companies owned by SC/ST Entrepreneurs of the MSE sector engaged in manufacturing and service activities are eligible for seeking assistance.
+
+How to apply:
+The eligible SC/ST MSEs may submit the application along with requisite documents for SCLCSS subsidy to the concerned Prime Lending Institution (Bank from which term loan has been availed for procurement of plant & machinery / equipment). The Nodal banks/agencies as notified from time to time by the Ministry of MSME shall upload the claim application of SC-ST MSEs on the dedicated MIS Portal. The nodal banks/agencies shall consider the proposals only in respect of credit approved by their respective branches, whereas, for other eligible Primary Lending Institutions (PLIs), SIDBI and NABARD shall be the nodal agencies for the release of subsidy under SCLCSS.
+
+Status of Scheme:
+So far, 2499 beneficiaries have received benefit under the scheme the details are as below:
+FY	No. of SC/ST Beneficiaries	Amount of Subsidy Released
+2019-20	189	23,34,13,280
+2020-21	537	53,39,66,076
+2021-22	285	34,82,42,204
+2022-23	577	69,66,11,137
+2023-24	645	72,40,00,981
+2024-25	608	68,25,32,474
+Grand Total	2841	3,21,87,66,152
