@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import re
-import time # Import the time library for sleeping
+import time
 from dotenv import load_dotenv
 from typing import List, Dict
 from astrapy import DataAPIClient
@@ -16,17 +16,19 @@ from Exception.exception import UdayamitraException
 load_dotenv()
 
 class AnalysisGenerator:
+    # --- [MODIFICATION] Made the example for actionable_steps more explicit ---
     JSON_FORMAT_INSTRUCTIONS = """
     {
     "insight_summary": "A concise, one-sentence summary of the key insight based on the user's query and the data.",
     "detailed_explanation": "A detailed but easy-to-understand explanation of the insight. Directly address the user's query and explain the 'why' based on the analyzed data. If the user asked for top countries, explain that the data shows top destination ports as a proxy.",
-    "data_summary": [
-        "A list of the key data points that support the insight.",
-        "Example: 1. Hamburg was the top destination with 5,230 shipments.",
-        "Example: 2. Nhava Sheva Sea was the top Indian port, exporting $1,540,320.50 USD."
+    "potential_benefits": [
+        "List of potential benefits or upsides for the user based on this analysis."
     ],
-    "potential_actions": [
-        "List of potential actions or further questions the user might consider based on this analysis."
+    "associated_risks": [
+        "List of key risks or downsides the user should consider."
+    ],
+    "actionable_steps": [
+        "A list of concrete, practical steps the user can take next. The steps should be numbered strings within the list, e.g., [\"1. Research the top importing countries.\", \"2. Analyze market trends.\"]"
     ],
     "sources": ["export_import_data"]
     }
@@ -100,45 +102,39 @@ class AnalysisGenerator:
                 return {
                     "insight_summary": f"No data found for '{product_keyword}'.",
                     "detailed_explanation": f"The analysis could not be completed because no records matching the product '{product_keyword}' were found in the trade database.",
-                    "data_summary": [],
-                    "potential_actions": ["Try searching for a different product.", "Check if the data ingestion for this product was successful."],
+                    "potential_benefits": [], "associated_risks": [], "actionable_steps": [],
                     "sources": [self.collection_name]
                 }
 
             analysis_results = self._aggregate_data(records)
             
-            system_prompt = "You are 'DataAnalystBot', an expert AI assistant specializing in trade data. Your purpose is to provide clear insights based on structured query results from a database. Your entire response MUST be a single, valid JSON object."
+            system_prompt = "You are 'DataAnalystBot', an expert AI assistant specializing in trade data. Your purpose is to provide clear, actionable insights based on structured data. Your entire response MUST be a single, valid JSON object."
             user_prompt = f"""
-            Generate an analysis for the user's query based on the provided structured data. Follow the JSON format precisely.
+            Generate an analysis for the user's query based on the provided structured data. Infer potential benefits, risks, and actionable steps for the user based on the data summary. Follow the JSON format precisely.
 
             USER QUERY: {user_query}
             STRUCTURED DATA ANALYSIS (Your ONLY source of information): {json.dumps(analysis_results, indent=2)}
             REQUIRED JSON OUTPUT FORMAT: {self.JSON_FORMAT_INSTRUCTIONS}
             """
 
-            # --- [MODIFICATION] Added retry logic for the LLM call ---
             max_retries = 3
-            delay = 2  # Start with a 2-second delay
+            delay = 2
             for attempt in range(max_retries):
                 try:
-                    logger.info(f"Attempting LLM call (Attempt {attempt + 1}/{max_retries})...")
                     response_dict = self.llm_client.run_json(system_prompt, user_prompt)
                     validated_output = InsightGeneratorOutput(**response_dict)
                     return validated_output.model_dump()
                 except Exception as llm_error:
-                    # Check if the error is a 503 or similar transient error
                     if "503" in str(llm_error) or "over capacity" in str(llm_error).lower():
                         logger.warning(f"LLM is over capacity. Retrying in {delay} seconds...")
                         if attempt < max_retries - 1:
                             time.sleep(delay)
-                            delay *= 2  # Exponential backoff
+                            delay *= 2
                         else:
                             logger.error("LLM is still over capacity after all retries.")
-                            raise  # Re-raise the last error if all retries fail
+                            raise
                     else:
-                        # If it's a different error (e.g., validation), fail immediately
                         raise llm_error
-            # --- [END MODIFICATION] ---
         
         except Exception as e:
             logger.error(f"AnalysisGenerator failed: {e}", exc_info=True)
