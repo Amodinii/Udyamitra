@@ -73,5 +73,21 @@
     "output_schema": "InsightGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
     "description": "Generate insights for the investors"
+  },
+  "AnalysisGenerator": {
+    "tool_name": "AnalysisGenerator",
+    "intents": [
+      "identify_top_exporters",
+      "information_retrieval",
+      "explain",
+      "mention",
+      "export_data",
+      "export_query"
+    ],
+    "endpoint": "http://127.0.0.1:10000/generate-analysis/mcp/",
+    "input_schema": "InsightGeneratorInput",
+    "output_schema": "InsightGeneratorOutput",
+    "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "description": "Generate analysis"
   }
 }

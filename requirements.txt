@@ -18,3 +18,5 @@ uvicorn
 pytest
 langchain-astradb
 langchain-huggingface
+cassandra-driver
+gevent
