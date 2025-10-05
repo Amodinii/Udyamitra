@@ -212,3 +212,5 @@ output/
 output.json
 pipeline_log.txt
 test.py
+data/raw/
+data/secure-connect-adb.zip
