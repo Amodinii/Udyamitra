@@ -1,8 +1,11 @@
+<<<<<<< HEAD
 '''
 main.py - This is the main entry point for the Udayamitra server.
 We are providing all our tools and database here as MCP servers.
 '''
 
+=======
+>>>>>>> Amodini
 import os
 import sys
 import contextlib
@@ -21,12 +24,20 @@ from Servers.SchemeExplainer.server import mcp as scheme_explainer_mcp
 from Servers.EligibilityChecker.server import mcp as eligibility_checker_mcp
 from Servers.SchemeDB.server import mcp as scheme_db_retriever_mcp
 from Servers.InvestorInsight.server import mcp as investor_insight_mcp
+<<<<<<< HEAD
+=======
+from Servers.AnalysisGenerator.server import mcp as analysis_generator_mcp
+>>>>>>> Amodini
 
 ALL_MCP_SERVERS = {
     "/explain-scheme": scheme_explainer_mcp,
     "/check-eligibility": eligibility_checker_mcp,
     "/retrieve-scheme": scheme_db_retriever_mcp,
     "/generate-insight": investor_insight_mcp,
+<<<<<<< HEAD
+=======
+    "/generate-analysis": analysis_generator_mcp,
+>>>>>>> Amodini
 }
 
 @contextlib.asynccontextmanager
@@ -49,10 +60,15 @@ try:
     server.add_middleware(
         CORSMiddleware,
         allow_origins=[
+<<<<<<< HEAD
             "http://localhost:6274",
             "http://127.0.0.1:6274",
             "http://localhost:6277",
             "http://127.0.0.1:6277"
+=======
+            "http://localhost:6274", "http://127.0.0.1:6274",
+            "http://localhost:6277", "http://127.0.0.1:6277"
+>>>>>>> Amodini
         ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -64,11 +80,15 @@ except Exception as e:
     raise UdayamitraException("Failed to create FastAPI instance", sys)
 
 # Health and config endpoints
+<<<<<<< HEAD
 @server.options("/health")
+=======
+>>>>>>> Amodini
 @server.get("/health")
 async def health_check():
     return {"status": "ok"}
 
+<<<<<<< HEAD
 @server.options("/config")
 @server.get("/config")
 async def config():
@@ -79,6 +99,12 @@ async def config():
     }
 
 @server.options("/")
+=======
+@server.get("/config")
+async def config():
+    return {"message": "Udayamitra MCP Server Configuration", "endpoints": list(ALL_MCP_SERVERS.keys())}
+
+>>>>>>> Amodini
 @server.get("/")
 async def root():
     return {"message": "Udayamitra MCP Server is running", "version": "1.0.0"}
@@ -93,7 +119,10 @@ async def proxy_mcp(request: Request):
     try:
         body = await request.body()
         headers = {key: value for key, value in request.headers.items() if key.lower() != "host"}
+<<<<<<< HEAD
 
+=======
+>>>>>>> Amodini
         async with httpx.AsyncClient() as client:
             resp = await client.post(target_url, content=body, headers=headers)
             return Response(
