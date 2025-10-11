@@ -115,3 +115,11 @@ class InsightGeneratorOutput(BaseModel):
     associated_risks: List[str] = Field(..., description="A list of key risks or downsides the user must consider.")
     actionable_steps: List[str] = Field(..., description="A list of concrete, practical steps the user can take next.")
     sources: List[str] = Field(..., description="List of the specific document titles or identifiers used for the analysis.")
+
+class AnalysisGeneratorOutput(BaseModel):
+    insight_summary: str = Field(..., description="A concise, impactful summary of the key business opportunity.")
+    detailed_explanation: str = Field(..., description="An explanation of what the data means for the user's business.")
+    data_summary: List[str] = Field(..., description="A bulleted list of key data points and findings from the analysis.")
+    actionable_steps: List[str] = Field(..., description="A clear checklist of practical next steps for the user.")
+    data_table: Optional[List[Dict[str, Any]]] = Field(None, description="An optional table of data, represented as a list of objects.")
+    sources: List[str] = Field(..., description="The name of the data collection used for the analysis.")

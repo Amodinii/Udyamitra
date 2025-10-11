@@ -82,11 +82,14 @@
       "explain",
       "mention",
       "export_data",
-      "export_query"
+      "export_query",
+      "information_request",
+      "list_importers",
+      "export_info"
     ],
     "endpoint": "http://127.0.0.1:10000/generate-analysis/mcp/",
     "input_schema": "InsightGeneratorInput",
-    "output_schema": "InsightGeneratorOutput",
+    "output_schema": "AnalysisGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
     "description": "Generate analysis"
   }

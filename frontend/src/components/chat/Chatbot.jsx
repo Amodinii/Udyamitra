@@ -4,12 +4,11 @@ import api from '../../api';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 
-
 function Chatbot() {
     const [messages, setMessages] = useImmer([]);
     const [newMessage, setNewMessage] = useState('');
     const [isPolling, setIsPolling] = useState(false);
-    const [conversationState, setConversationState] = useState(null); // Track conversation state
+    const [conversationState, setConversationState] = useState(null);
 
     const isLoading = isPolling;
 
@@ -25,7 +24,6 @@ function Chatbot() {
         if (!trimmedMessage || isPolling) return;
 
         console.log(`User Message in Chatbot.jsx: ${trimmedMessage}`);
-        // Show user message and assistant placeholder
         setMessages(draft => [
         ...draft,
         { role: 'user', content: trimmedMessage },
@@ -37,21 +35,14 @@ function Chatbot() {
         let response;
 
         if (conversationState) {
-            // Follow-up: call /continue
             response = await api.continuePipeline(trimmedMessage, conversationState);
-            console.log(`Follow-up Response from /continue: ${JSON.stringify(response)}`);
         } else {
-            // Initial query: call /start
             response = await api.startPipeline(trimmedMessage);
-            console.log(`Initial Response from /start: ${JSON.stringify(response)}`);
         }
 
-        // Store and log conversation state
         if (response.state) {
             setConversationState(response.state);
-            console.log("Updated Conversation State (on submit):", response.state); // log state
         }
-
         setIsPolling(true);
         } catch (err) {
         console.error(err);
@@ -65,7 +56,6 @@ function Chatbot() {
         }
     };
 
-    // Poll status every 2s
     useEffect(() => {
         if (!isPolling) return;
 
@@ -74,33 +64,29 @@ function Chatbot() {
             const status = await api.getPipelineStatus();
             console.log(`Status from /status: ${JSON.stringify(status)}`);
 
-            // Save and log updated state
             if (status.state) {
-            setConversationState(status.state);
-            console.log("Updated Conversation State (on polling):", status.state); // log state
+                setConversationState(status.state);
             }
 
             setMessages(draft => {
-            const last = draft[draft.length - 1];
-            if (status.stage === 'COMPLETED' && status.results) {
-                console.log(`Results: ${JSON.stringify(status.results)}`);
-                const formattedContent = Object.entries(status.results)
-                .map(([tool, result]) => {
-                const explanation = typeof result === 'string' ? result : result.output_text;
-                return `### Tool used for the query: ${tool}\n\n${explanation}`;
-                })
-                .join('\n\n');
+                const last = draft[draft.length - 1];
+                if (status.stage === 'COMPLETED' && status.results) {
+                    console.log(`Results: ${JSON.stringify(status.results)}`);
+                    
+                    // --- THE ONLY MODIFICATION ---
+                    // This passes the raw results object, allowing ChatMessages to decide how to render it.
+                    draft[draft.length - 1] = {
+                        role: 'assistant',
+                        content: status.results,
+                        loading: false
+                    };
+                    // --- END OF MODIFICATION ---
 
-                draft[draft.length - 1] = {
-                role: 'assistant',
-                content: formattedContent,
-                loading: false
-                };
-                setIsPolling(false);
-                clearInterval(interval);
-            } else {
-                last.content = `Current stage: ${status.stage}`;
-            }
+                    setIsPolling(false);
+                    clearInterval(interval);
+                } else {
+                    last.content = `Current stage: ${status.stage}`;
+                }
             });
         } catch (err) {
             console.error('Error polling pipeline:', err);
@@ -117,7 +103,7 @@ function Chatbot() {
         }, 2000);
 
         return () => clearInterval(interval);
-    }, [isPolling]);
+    }, [isPolling, setMessages]);
 
     return (
         <div className='relative grow flex flex-col gap-6 pt-6'>

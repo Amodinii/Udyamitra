@@ -20,3 +20,4 @@ langchain-astradb
 langchain-huggingface
 cassandra-driver
 gevent
+json5
