@@ -1,0 +1,29 @@
+About the Scheme
+The Scheme for setting up of Compound Semiconductors / Silicon Photonics / Sensors (including MEMS) Fabs / Discrete Semiconductors Fab and Semiconductor ATMP / OSAT facilities in India shall provides fiscal support of 50% of the of the Capital Expenditure on a pari-passu basis to the approved applicants.
+
+The electronics industry is the world’s largest and fastest growing industry with applications in all sectors of the economy. Semiconductors have been a key enabler in the advancement of electronics for the past 50 years and will continue to play an even greater role with the introduction of new applications including IoT, artificial intelligence, 5G, smart cars, smart factories, data centres, robotics, etc.
+Semiconductor manufacturing is a complex and research-intensive sector, defined by rapid changes in technology which require significant and sustained investment. In the micro-electronics industry, integrated circuits (ICs) and discrete semiconductor devices are produced in a wafer Fabrication facility, commonly known as a Fab. Semiconductors are at the heart of electronic products and constitute a significant part of the Bill of Materials (BOM).
+The vision of National Policy on Electronics 2019 (NPE 2019) is to position India as a global hub for Electronics System Design and Manufacturing (ESDM) and create an enabling environment for the industry to compete globally. One of the main strategies of NPE 2019 is to facilitate setting up of semiconductor Fab facilities and its eco-system for design and fabrication of chips and chip components
+Fiscal support: The scheme shall extend a fiscal support of 50% of the Capital Expenditure for setting up of Compound Semiconductors / Silicon Photonics (SiPh) / Sensors (including MEMS) Fab/ Discrete Semiconductor Fab and Semiconductor ATMP / OSAT facilities in India
+Additional financial support, if any, offered by the State Government or any of its agencies or local bodies may also be availed. However, an applicant under this Scheme will not avail incentive under the Scheme for Promotion of Manufacturing of Electronic Components and Semiconductors (SPECS) under the Semiconductor Fab, Compound Semiconductors Fab and ATMP category
+Objective
+To attract large investments for setting up semiconductor wafer fabrication facilities in the country to strengthen the electronics manufacturing ecosystem and help establish a trusted value chain.
+Eligibility
+Companies / Consortia / Joint Ventures proposing to set up a Silicon CMOS based Semiconductor Fab in India for manufacturing Logic / Memory / Digital ICs / Analog ICs / Mixed Signal ICs / SoCs
+Tenure of the Scheme
+Support under the scheme shall be provided for a period of six years. The tenure of the actual fiscal support outflow may be extended based on the approval of the Minister of Electronics and Information Technology.
+Procedure to Apply
+
+1.Registration
+Submission of relevant information to register with ISM and submit application
+
+2.Proposal
+Detailed Project Report
+
+3.Payment of Fee
+Application fee as per Scheme and Guidelines.
+
+*Fee shall be inclusive of GST however the transaction charges are to be borne by the Applicant independently
+
+4.Fiscal Support
+The tenure of the fiscal support shall be for a period of 5-6 years
