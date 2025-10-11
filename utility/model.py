@@ -89,7 +89,6 @@ class ToolMemory(BaseModel):
 
 class ConversationState(BaseModel):
     messages: List[Message] = []
-
     # Core memory
     user_profile: Optional[UserProfile] = None
     context_entities: Dict[str, Any] = {}

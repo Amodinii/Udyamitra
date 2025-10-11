@@ -30,9 +30,15 @@ class LocationNormalizer:
                 "q": raw_location,
                 "format": "json",
                 "addressdetails": 1,
-                "limit": 1
+                "limit": 1,
+                "accept-language": "en" 
             }
-            response = requests.get(self.NOMINATIM_URL, params=params, headers={"User-Agent": "Udyamitra/1.0"})
+
+            headers = {
+                "User-Agent": "Udyamitra/1.0",
+                "Accept-Language": "en" 
+            }
+            response = requests.get(self.NOMINATIM_URL, params=params, headers=headers)
             time.sleep(self.delay)  # avoid hammering the API
             data = response.json()
 

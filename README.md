@@ -1,5 +1,5 @@
 # Udyamitra
-Udyamitra is an intelligent AI-powered assistant designed to empower India's Micro, Small, and Medium Enterprises (MSMEs) and manufacturing sectors by making government schemes, incentives, and compliance processes more accessible and actionable.
+Udyamitra is an intelligent AI-powered assistant designed to make government schemes, incentives, and compliance processes more accessible and actionable.
 
 ### Commands
 
@@ -14,3 +14,7 @@ Udyamitra is an intelligent AI-powered assistant designed to empower India's Mic
 #### MCP Servers
 - From the root directory of the project, run command:
 - uvicorn Servers.main:server --reload --port 10000
+
+#### Run the Analysis Generator Tool
+- From the root directory of the project, run command:
+- python -m Servers.AnalysisGenerator.server --port 8001

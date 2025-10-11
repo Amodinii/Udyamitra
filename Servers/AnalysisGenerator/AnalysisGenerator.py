@@ -12,6 +12,7 @@ from utility.LLM import LLMClient
 from utility.model import AnalysisGeneratorOutput # Use the new, dedicated output model
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
+from Meta.location_normalizer import LocationNormalizer
 
 load_dotenv()
 
@@ -48,8 +49,8 @@ class AnalysisGenerator:
             client = DataAPIClient(self.astra_db_token)
             db = client.get_database(self.astra_db_endpoint)
             self.collection = db.get_collection(self.collection_name)
-            
             logger.info(f"Successfully connected to Astra DB collection: '{self.collection_name}'")
+            self.location_normalizer = LocationNormalizer()
 
         except Exception as e:
             logger.error(f"Failed to initialize AnalysisGenerator: {e}")
@@ -74,22 +75,34 @@ class AnalysisGenerator:
 
     def _build_data_table(self, top_destinations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Build a dynamic data_table (no hardcoding) from top_destinations list.
-        Each row will have: Rank, Destination Port, Country (Inferred), Total Shipments.
-        Country (Inferred) left empty here to avoid incorrect inference; LLM can mention it in explanation if helpful.
+        Build a structured data_table using top_destinations list.
+        Each row will include: Rank, Destination Port, Country (Inferred), Total Shipments.
+        Uses LocationNormalizer to infer the country name in English (cached + rate-limited).
         """
+
         table = []
         for idx, item in enumerate(top_destinations):
             destination_port = item.get("destination_port") or ""
             shipment_count = item.get("shipment_count") or 0
-            # Ensure values are safe for frontend rendering
+
+            inferred_country = ""
+            try:
+                if destination_port:
+                    normalized = self.location_normalizer.normalize(destination_port)
+                    inferred_country = normalized.get("country") or ""
+            except Exception as e:
+                logger.warning(f"Failed to normalize location '{destination_port}': {e}")
+                inferred_country = ""
+
             table.append({
                 "Rank": idx + 1,
                 "Destination Port": destination_port,
-                "Country (Inferred)": "",  # leave blank (or fill if you have a mapping)
+                "Country (Inferred)": inferred_country,
                 "Total Shipments": shipment_count
             })
+
         return table
+
 
     def _to_markdown_table(self, data_table: List[Dict[str, Any]]) -> str:
         """
@@ -240,7 +253,7 @@ class AnalysisGenerator:
 
             combined = {
                 "insight_summary": insight_summary,
-                "detailed_explanation": detailed_explanation + ("\n\n" + markdown_table if markdown_table and "table" not in detailed_explanation.lower() else ""),
+                "detailed_explanation": detailed_explanation, #+ ("\n\n" + markdown_table if markdown_table and "table" not in detailed_explanation.lower() else ""),
                 "data_summary": data_summary,
                 "actionable_steps": actionable_steps,
                 "data_table": data_table,

@@ -214,3 +214,6 @@ pipeline_log.txt
 test.py
 data/raw/
 data/secure-connect-adb.zip
+.python-version
+all_files.txt
+Assets/
