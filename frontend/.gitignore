@@ -11,12 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
-<<<<<<< HEAD
-=======
 .env
 .env.*
 !.env.example
->>>>>>> Amodini
 
 # Editor directories and files
 .vscode/*

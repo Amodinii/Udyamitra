@@ -212,8 +212,7 @@ output/
 output.json
 pipeline_log.txt
 test.py
-<<<<<<< HEAD
-=======
 data/raw/
 data/secure-connect-adb.zip
->>>>>>> Amodini
+.python-version
+all_files.txt

@@ -17,11 +17,7 @@ fastapi
 uvicorn
 pytest
 langchain-astradb
-<<<<<<< HEAD
-langchain-huggingface
-=======
 langchain-huggingface
 cassandra-driver
 gevent
 json5
->>>>>>> Amodini
