@@ -14,7 +14,3 @@ Udyamitra is an intelligent AI-powered assistant designed to make government sch
 #### MCP Servers
 - From the root directory of the project, run command:
 - uvicorn Servers.main:server --reload --port 10000
-
-#### Run the Analysis Generator Tool
-- From the root directory of the project, run command:
-- python -m Servers.AnalysisGenerator.server --port 8001
