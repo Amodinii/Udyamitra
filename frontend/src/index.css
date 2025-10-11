@@ -7,11 +7,7 @@
   --font-urbanist: Urbanist, sans-serif;
 
   /* Primary Color Scheme */
-  --color-background: #1E1E1E;
-  --color-user-message: #2E8B57;      /* Sea Green */
-  --color-assistant-message: #452C63; /* Dark Purple */
-  --color-main-text: #E5E5E5;
-  --color-muted-text: #A0A0A0;
+  --color-background: ##f3f4f6;
 
   /* Optional Accents */
   --color-accent: #F3C3B1;
