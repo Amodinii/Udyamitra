@@ -75,7 +75,13 @@
       "identify_top_exporters",
       "list_importers",
       "retrieve_export_data",
-      "generate_market_report"
+      "generate_market_report",
+      "export_info",
+      "check_import",
+      "check_trade_info",
+      "check_trade_data",
+      "check_export_markets",
+      "check_import_status"
     ],
     "endpoint": "http://127.0.0.1:10000/generate-analysis/mcp/",
     "input_schema": "InsightGeneratorInput",
