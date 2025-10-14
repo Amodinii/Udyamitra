@@ -9,7 +9,7 @@ from astrapy import DataAPIClient
 from collections import defaultdict
 
 from utility.LLM import LLMClient
-from utility.model import AnalysisGeneratorOutput # Use the new, dedicated output model
+from utility.model import AnalysisGeneratorOutput
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from Meta.location_normalizer import LocationNormalizer
@@ -17,7 +17,6 @@ from Meta.location_normalizer import LocationNormalizer
 load_dotenv()
 
 class AnalysisGenerator:
-    # New instructions that match the new AnalysisGeneratorOutput model
     JSON_FORMAT_INSTRUCTIONS = """
     {
     "insight_summary": "A concise, impactful summary of the key business opportunity for the user.",
@@ -28,11 +27,10 @@ class AnalysisGenerator:
     "actionable_steps": [
         "Frame this as 'Your Next Steps'. Provide a clear checklist of actions the user can take, numbered as strings."
     ],
-    "data_table": "Dynamically generate an array of objects for the top destination ports using the keys: Rank, Destination Port, Country (Inferred), Total Shipments",
+    "data_table": "Dynamically generate an array of objects for the top destination ports using the keys: Rank, Destination Port, Country (Inferred), Total Shipments. This field should be an empty list if a table is not relevant to the user's query.",
     "sources": ["export_import_data"]
     }
     """
-
 
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         try:
@@ -56,6 +54,66 @@ class AnalysisGenerator:
             logger.error(f"Failed to initialize AnalysisGenerator: {e}")
             raise UdayamitraException(e, sys)
             
+    # ==============================================================================
+    # NEW METHOD: To classify the user's intent first
+    # ==============================================================================
+    def _classify_query_intent(self, user_query: str) -> str:
+        """
+        Uses the LLM to classify the user's query intent.
+        Returns 'table_required' or 'direct_answer'.
+        """
+        system_prompt = """
+        You are a query analysis expert. Your task is to determine if a user's question requires a detailed table of data to be answered effectively, or if a simple, direct textual answer is sufficient.
+
+        Classify the query into one of two categories:
+        1.  'table_required': For questions asking for lists, rankings, "top N", "which countries", "what are the main ports".
+        2.  'direct_answer': For yes/no questions, simple factual lookups, or definition requests.
+
+        Respond ONLY with a JSON object containing a single key "intent".
+        """
+        
+        user_prompt = f"""
+        Analyze the following user query:
+        "{user_query}"
+
+        Example 1:
+        Query: "which are the top countries importing capacitors from india"
+        Correct response: {{"intent": "table_required"}}
+
+        Example 2:
+        Query: "does middle east import capacitor from india?"
+        Correct response: {{"intent": "direct_answer"}}
+        
+        Example 3:
+        Query: "List the top 5 destination ports for our products."
+        Correct response: {{"intent": "table_required"}}
+
+        Now, classify the original query.
+        """
+        try:
+            response = self.llm_client.run_json(system_prompt, user_prompt)
+            intent = response.get("intent", "table_required") # Default to table if classification fails
+            if intent not in ["table_required", "direct_answer"]:
+                logger.warning(f"Unexpected intent '{intent}' received. Defaulting to 'table_required'.")
+                return "table_required"
+            return intent
+        except Exception as e:
+            logger.error(f"Failed to classify query intent: {e}. Defaulting to 'table_required'.")
+            return "table_required" # Safe fallback
+
+    # ==============================================================================
+    # NEW HELPER METHOD: To sanitize LLM output before validation
+    # ==============================================================================
+    def _sanitize_llm_list_output(self, data: Any) -> List[str]:
+        """Safely converts LLM output into a list of strings."""
+        if isinstance(data, list):
+            return [str(item) for item in data] # Ensure all items are strings
+        if isinstance(data, str):
+            # Split by newline, strip whitespace/empty lines, and remove common list markers
+            items = [re.sub(r'^\s*[\*\-]?\s*\d*\.\s*', '', line).strip() for line in data.split('\n')]
+            return [item for item in items if item] # Filter out empty strings
+        return [] # Return an empty list for other unexpected types
+
     def _aggregate_data(self, records: List[Dict]) -> Dict:
         if not records: return {}
         port_values = defaultdict(float)
@@ -74,17 +132,10 @@ class AnalysisGenerator:
         }
 
     def _build_data_table(self, top_destinations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Build a structured data_table using top_destinations list.
-        Each row will include: Rank, Destination Port, Country (Inferred), Total Shipments.
-        Uses LocationNormalizer to infer the country name in English (cached + rate-limited).
-        """
-
         table = []
         for idx, item in enumerate(top_destinations):
             destination_port = item.get("destination_port") or ""
             shipment_count = item.get("shipment_count") or 0
-
             inferred_country = ""
             try:
                 if destination_port:
@@ -93,46 +144,38 @@ class AnalysisGenerator:
             except Exception as e:
                 logger.warning(f"Failed to normalize location '{destination_port}': {e}")
                 inferred_country = ""
-
             table.append({
                 "Rank": idx + 1,
                 "Destination Port": destination_port,
                 "Country (Inferred)": inferred_country,
                 "Total Shipments": shipment_count
             })
-
         return table
 
-
     def _to_markdown_table(self, data_table: List[Dict[str, Any]]) -> str:
-        """
-        Convert data_table (list of dicts) into a GitHub-Flavored Markdown table string.
-        This is deterministic and safe (no LLM required).
-        """
         if not data_table:
             return ""
-
         headers = list(data_table[0].keys())
         header_row = "| " + " | ".join(headers) + " |"
         divider = "| " + " | ".join(["---"] * len(headers)) + " |"
-
         rows = []
         for row in data_table:
             cells = []
             for h in headers:
                 v = row.get(h, "")
-                if v is None:
-                    v = ""
-                # sanitize newlines so JSON stays safe
+                if v is None: v = ""
                 cell = str(v).replace("\n", " ")
                 cells.append(cell)
             rows.append("| " + " | ".join(cells) + " |")
-
         return "\n".join([header_row, divider] + rows)
-
 
     def generate_structured_insight(self, user_query: str, user_profile: dict, entities: dict) -> dict:
         try:
+            # STEP 1: Classify the user's intent
+            intent = self._classify_query_intent(user_query)
+            logger.info(f"User query classified with intent: '{intent}'")
+
+            # STEP 2: Database query
             product_keyword = entities.get("product")
             db_filter = {}
             if product_keyword:
@@ -142,16 +185,10 @@ class AnalysisGenerator:
             else:
                 logger.warning("No 'product' entity found. Analyzing all data.")
 
-            try:
-                logger.info(f"Executing DB find with filter: {db_filter}")
-                records = list(self.collection.find(filter=db_filter))
-                logger.info(f"Found {len(records)} records in the database.")
-            except Exception as db_error:
-                logger.error(f"Database query failed: {db_error}", exc_info=True)
-                raise UdayamitraException(f"Failed to query trade database: {db_filter}", sys)
+            records = list(self.collection.find(filter=db_filter))
+            logger.info(f"Found {len(records)} records in the database.")
 
             if not records:
-                # Return a valid JSON object that matches the new model (data_table as empty list)
                 return {
                     "insight_summary": f"No data found for '{product_keyword}'.",
                     "detailed_explanation": "The analysis could not be completed because no records matching the specified product were found in the trade database.",
@@ -160,46 +197,48 @@ class AnalysisGenerator:
                     "data_table": [],
                     "sources": [self.collection_name]
                 }
-
-            # Aggregate DB results (existing logic)
+            
             analysis_results = self._aggregate_data(records)
-            top_destinations = analysis_results.get("top_destination_ports_by_shipments", [])
 
-            # --- Build deterministic data_table from DB results (no hardcoding) ---
-            data_table = self._build_data_table(top_destinations)
-            # Create a markdown table string (deterministic) so frontend can show Markdown if needed
-            markdown_table = self._to_markdown_table(data_table)
+            # STEP 3: Conditional logic based on intent
+            if intent == "table_required":
+                top_destinations = analysis_results.get("top_destination_ports_by_shipments", [])
+                data_table = self._build_data_table(top_destinations)
+                markdown_table = self._to_markdown_table(data_table)
 
-            # --- Ask LLM to produce textual narrative only (not the data_table) ---
-            system_prompt = (
-                "You are a 'Business Growth Advisor AI'. "
-                "Produce a single JSON object containing ONLY these fields: "
-                "insight_summary, detailed_explanation, data_summary (array of strings), actionable_steps (array of strings), sources (array). "
-                "DO NOT produce or modify a 'data_table' field — the caller will provide the table separately. "
-                "detailed_explanation may optionally reference the provided 'markdown_table' but must still be valid JSON strings (no raw objects)."
-            )
-
-            user_prompt = f"""
-            Generate the textual parts of the analysis (insight_summary, detailed_explanation, data_summary, actionable_steps).
-            Use the structured information to make these answers actionable and tailored to the user's profile.
-            Do NOT output or modify 'data_table'; that will be merged by the caller.
-
-            USER QUERY: {user_query}
-            USER PROFILE: {json.dumps(user_profile, indent=2)}
-            STRUCTURED DATA ANALYSIS: {json.dumps(analysis_results, indent=2)}
-            TOP DESTINATIONS (raw): {json.dumps(top_destinations, indent=2)}
-            MARKDOWN_TABLE (for your reference only - you should not reproduce it as JSON): 
-            {markdown_table}
-
-            Output MUST be a single JSON object with the keys:
-            - insight_summary (string)
-            - detailed_explanation (string)  -- you may include readable references to the table but avoid inserting raw JSON objects
-            - data_summary (array of short strings)
-            - actionable_steps (array of short strings)
-            - sources (array of strings)
-            """
-
-            # Try asking the LLM to fill textual fields; if it fails, we will fallback to a deterministic summary
+                system_prompt = (
+                    "You are a 'Business Growth Advisor AI'. Produce a single JSON object. "
+                    "Use the provided data and markdown table to generate a detailed textual analysis. "
+                    "DO NOT produce or modify a 'data_table' field."
+                )
+                user_prompt = f"""
+                Generate the textual parts of the analysis based on the user's query and the data provided.
+                USER QUERY: {user_query}
+                USER PROFILE: {json.dumps(user_profile, indent=2)}
+                STRUCTURED DATA ANALYSIS: {json.dumps(analysis_results, indent=2)}
+                MARKDOWN_TABLE (for your reference):
+                {markdown_table}
+                Output MUST be a single JSON object with the keys: insight_summary, detailed_explanation, data_summary, actionable_steps, sources.
+                """
+            else: # intent == "direct_answer"
+                data_table = []
+                markdown_table = ""
+                system_prompt = (
+                    "You are a 'Business Growth Advisor AI'. Your goal is to directly answer the user's question based on the provided data summary. "
+                    "Do not suggest presenting a table. Formulate a concise and direct answer. "
+                    "Respond in a single JSON object."
+                )
+                user_prompt = f"""
+                Directly answer the user's question using the provided data.
+                USER QUERY: {user_query}
+                USER PROFILE: {json.dumps(user_profile, indent=2)}
+                STRUCTURED DATA ANALYSIS: {json.dumps(analysis_results, indent=2)}
+                For example, if the query is "does the middle east import capacitors?" and the data shows shipments to Dubai, a good insight summary would be "Yes, there is evidence of capacitor exports to the Middle East, specifically to ports like Dubai."
+                Output MUST be a single JSON object with the keys: insight_summary, detailed_explanation, data_summary, actionable_steps, sources.
+                Set `data_summary` to a few key points that support your answer.
+                """
+            
+            # STEP 4: LLM call
             max_retries = 3
             delay = 2
             textual_response = None
@@ -215,52 +254,50 @@ class AnalysisGenerator:
                     else:
                         logger.error("LLM failed after retries; falling back to deterministic text.")
                         textual_response = None
-
-            # If LLM failed or returned unexpected, create deterministic textual fallback
+            
+            # STEP 5: Assemble response, using fallback if necessary
             if not textual_response or not isinstance(textual_response, dict):
-                # Deterministic fallback content (useful and safe)
-                insight_summary = f"Top destination ports identified for your query ({len(data_table)} entries)."
-                detailed_explanation = "Below is a table summarizing top destination ports and shipment counts.\n\n" + markdown_table
-                data_summary = [
-                    f"{row['Rank']}. {row['Destination Port']} — {row['Total Shipments']} shipments"
-                    for row in data_table
-                ][:5]
-                actionable_steps = [
-                    "1. Validate demand in the top destinations by contacting potential buyers.",
-                    "2. Investigate regulatory/import requirements for the top countries.",
-                    "3. Prioritize market-entry research for the top 1-2 ports."
-                ]
+                # Fallback logic
+                insight_summary = f"Analysis for your query on '{product_keyword}'."
+                detailed_explanation = "Based on the data, here are the key findings."
+                data_summary = [f"Total records analyzed: {analysis_results.get('total_records_analyzed', 0)}"]
+                if data_table:
+                    detailed_explanation += "\n\n" + markdown_table
+                    data_summary.extend([f"{row['Rank']}. {row['Destination Port']} — {row['Total Shipments']} shipments" for row in data_table][:3])
+                actionable_steps = ["Review the data summary to inform your next business decision."]
                 sources = [self.collection_name]
                 combined = {
-                "insight_summary": insight_summary,
-                "detailed_explanation": detailed_explanation,  
-                "data_summary": data_summary,
-                "actionable_steps": actionable_steps,
-                "data_table": data_table, 
-                "sources": sources
+                    "insight_summary": insight_summary,
+                    "detailed_explanation": detailed_explanation,
+                    "data_summary": data_summary,
+                    "actionable_steps": actionable_steps,
+                    "data_table": data_table,
+                    "sources": sources
                 }
-                # Validate with the Pydantic model if you want
-                validated_output = AnalysisGeneratorOutput(**{k: combined[k] for k in ["insight_summary","detailed_explanation","data_summary","actionable_steps","data_table","sources"]})
-                return validated_output.model_dump()
+            else:
+                # ==============================================================================
+                # MODIFIED SECTION: Sanitize LLM response before combining
+                # ==============================================================================
+                insight_summary = str(textual_response.get("insight_summary") or "")
+                detailed_explanation = str(textual_response.get("detailed_explanation") or "")
+                
+                # Use the new helper to sanitize list outputs
+                data_summary = self._sanitize_llm_list_output(textual_response.get("data_summary"))
+                actionable_steps = self._sanitize_llm_list_output(textual_response.get("actionable_steps"))
+                
+                sources = self._sanitize_llm_list_output(textual_response.get("sources"))
+                if not sources:
+                    sources = [self.collection_name]
 
-            # Merge deterministic data_table with the LLM textual output
-            # LLM response must contain textual keys as per instructions; defensively extract them
-            insight_summary = textual_response.get("insight_summary", "").strip() if isinstance(textual_response.get("insight_summary"), str) else str(textual_response.get("insight_summary") or "")
-            detailed_explanation = textual_response.get("detailed_explanation", "").strip() if isinstance(textual_response.get("detailed_explanation"), str) else str(textual_response.get("detailed_explanation") or "")
-            data_summary = textual_response.get("data_summary") or []
-            actionable_steps = textual_response.get("actionable_steps") or []
-            sources = textual_response.get("sources") or [self.collection_name]
-
-            combined = {
-                "insight_summary": insight_summary,
-                "detailed_explanation": detailed_explanation, #+ ("\n\n" + markdown_table if markdown_table and "table" not in detailed_explanation.lower() else ""),
-                "data_summary": data_summary,
-                "actionable_steps": actionable_steps,
-                "data_table": data_table,
-                "sources": sources
-            }
-
-            # Validate against the output model and return
+                combined = {
+                    "insight_summary": insight_summary,
+                    "detailed_explanation": detailed_explanation,
+                    "data_summary": data_summary,
+                    "actionable_steps": actionable_steps,
+                    "data_table": data_table, 
+                    "sources": sources
+                }
+            
             validated_output = AnalysisGeneratorOutput(**combined)
             return validated_output.model_dump()
 
