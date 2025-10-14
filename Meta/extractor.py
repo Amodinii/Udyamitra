@@ -7,6 +7,8 @@ from router.ToolExecutor import safe_json_parse
 import json
 import sys
 import re
+from dotenv import load_dotenv
+load_dotenv()
 
 class MetadataExtractor:
     def __init__(self, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
@@ -59,28 +61,40 @@ Use this context if the current query is ambiguous or a follow-up.
             contextual_query = f"{context_hint}\n\nCurrent query: {query}" if context_hint else query
 
             system_prompt = """
-You are a metadata extraction assistant.
-Your job is to extract the following structured fields from a user query:
-- intents: A list of high-level user goals like 'explain', 'check_eligibility', 'register'
-- entities: Key entities such as the name of the scheme. If multiple schemes are mentioned, return them as a list.
-- user_profile: Includes 'user_type' (e.g., 'woman_entrepreneur', 'student') and 'location'. If no location is specified in the query, use "unknown" or "India" as a fallback.
-- If user_type is not explicitly mentioned, infer it from the context (e.g., if asking about subsidies, default to "entrepreneur").
-- Always return non-empty user_type and location if possible.
+                You are an expert query understanding assistant.
+                Your job is to analyze a user query and extract structured information in JSON format.
 
-Respond ONLY with the following JSON structure:
-{
-    "intents": [...],
-    "entities": {
-        "scheme": "..."
-    },
-    "user_profile": {
-        "user_type": "...",
-        "location": "..."
-    }
-}
+                Step 1: Expand the query by rewriting it into a clear, detailed explanation of the original query that makes implicit context explicit (e.g., add “in India” if relevant), but do NOT add facts not present or implied. Remember we prefer grammatically complete declarative sentences.
 
-- Make sure all keys are enclosed in double quotes and properly comma-separated.
-""".strip()
+                Step 2: Extract the following fields:
+
+                1) intents: A list of the user’s goals. Examples: ["find_funds", "compare_schemes", "check_eligibility", "apply_scheme", "general_inquiry"]. 
+                If unsure, default to ["general_inquiry"].
+
+                2) entities: A dictionary of key-value pairs for specific entities mentioned or implied in the query.
+                Example keys: "scheme", "amount", "duration", "item", "location", "age", "income".
+                If none are found, return {}.
+
+                3) user_profile: A dictionary with:
+                - user_type: Infer logically from context (e.g., subsidies → "entrepreneur", education → "student"). Never empty.
+                - location: Extract from query or infer from context. If not clear, use "unknown".
+
+                Your output MUST strictly follow this structure:
+                {
+                    "expanded_query": "...",
+                    "intents": [...],
+                    "entities": {...},
+                    "user_profile": {
+                        "user_type": "...",
+                        "location": "..."
+                    }
+                }
+
+                Rules:
+                - Always include all keys, even if values are "unknown" or empty.
+                - Respond with ONLY valid JSON — no explanations or extra text.
+                - Be concise, factual, and avoid hallucinations.
+            """.strip()
 
             raw_output = self.llm_client.run_chat(system_prompt, contextual_query)
             logger.info(f"Raw output from LLM:\n{raw_output}")
@@ -100,6 +114,12 @@ Respond ONLY with the following JSON structure:
                     )
 
             # --- Normalize entities.scheme: handle list -> string ---
+            expanded_query = metadata_dict.get("expanded_query", "").strip()
+            if expanded_query and expanded_query.lower() != query.lower():
+                query = expanded_query  # use expanded query for further processing
+            
+            logger.info(f"Expanded query: {query}")
+
             entities = metadata_dict.get("entities", {}) or {}
             scheme_val = entities.get("scheme")
             if isinstance(scheme_val, list) and len(scheme_val) == 1:
