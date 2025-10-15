@@ -2,89 +2,80 @@
   "SchemeExplainer": {
     "tool_name": "SchemeExplainer",
     "intents": [
-      "explain",
-      "understand",
-      "describe",
-      "list_benefits"
+      "explain_scheme",
+      "describe_scheme",
+      "list_benefits",
+      "understand_scheme"
     ],
     "endpoint": "http://127.0.0.1:10000/explain-scheme/mcp/",
     "input_schema": "SchemeMetadata",
     "output_schema": "SchemeExplanationResponse",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "description": "Explains schemes to users"
+    "description": "Explains government schemes to users, including benefits, eligibility criteria, and usage instructions.",
+    "domain": "policy",
+    "entity_types": ["scheme", "user_type", "location"]
   },
+
   "SchemeRetriever": {
     "tool_name": "SchemeRetriever",
     "intents": [
-      "search",
-      "retrieve",
-      "lookup",
-      "fetch"
+      "search_scheme",
+      "retrieve_scheme",
+      "lookup_scheme",
+      "fetch_scheme_data"
     ],
     "endpoint": "http://127.0.0.1:10000/retrieve-scheme/mcp/",
     "input_schema": "RetrievedDoc",
-    "output_schema": "RetriverOutput",
+    "output_schema": "RetrieverOutput",
     "model": "AstraDB + Groq Embedding",
-    "description": "Retrieves scheme metadata and content"
+    "description": "Retrieves metadata and content for government schemes from the database.",
+    "domain": "policy",
+    "entity_types": ["scheme", "location"]
   },
+
   "EligibilityChecker": {
     "tool_name": "EligibilityChecker",
     "intents": [
       "check_eligibility",
-      "eligible",
       "am_i_eligible",
-      "can_apply"
+      "can_apply",
+      "verify_eligibility"
     ],
     "endpoint": "http://127.0.0.1:10000/check-eligibility/mcp/",
     "input_schema": "EligibilityCheckRequest",
     "output_schema": "EligibilityCheckResponse",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "description": "Checks if a user is eligible for a given scheme based on their profile"
+    "description": "Checks if a user meets the eligibility criteria for a given scheme based on their profile and location.",
+    "domain": "policy",
+    "entity_types": ["scheme", "user_type", "location", "income", "age"]
   },
+
   "InsightGenerator": {
     "tool_name": "InsightGenerator",
     "intents": [
-      "explain",
-      "how to ensure",
-      "measures",
-      "investments",
-      "investor",
-      "government investment",
-      "insights",
-      "generate_insight",
-      "generate_insights",
       "generate_investor_insight",
-      "compare_benefits",
-      "key_incentives",
-      "explore_EV_components_manufacturing",
-      "explore_new_business_opportunity",
-      "seek_government_assistance",
-      "explore_ev_components_manufacturing",
+      "analyze_opportunity",
       "assess_capabilities",
-      "seek_guidance",
-      "explain",
-      "assess_demand",
-      "partner_with_manufacturers",
-      "networking",
-      "assess_manufacturing_capabilities"
+      "compare_benefits",
+      "provide_guidance"
     ],
     "endpoint": "http://127.0.0.1:10000/generate-insight/mcp/",
     "input_schema": "InsightGeneratorInput",
     "output_schema": "InsightGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "description": "Generate insights for the investors"
+    "description": "Generates actionable business insights for investors, including market opportunities, government incentives, and manufacturing capabilities.",
+    "domain": "investment",
+    "entity_types": ["industry", "location", "item", "user_type"]
   },
+
   "AnalysisGenerator": {
     "tool_name": "AnalysisGenerator",
     "intents": [
+      "generate_export_analysis",
       "identify_top_exporters",
-      "information_retrieval",
-      "explain",
-      "mention",
-      "export_data",
-      "export_query",
-      "information_request",
       "list_importers",
+      "retrieve_export_data",
+      "generate_market_report",
       "export_info",
       "check_import",
       "check_trade_info",
@@ -96,6 +87,8 @@
     "input_schema": "InsightGeneratorInput",
     "output_schema": "AnalysisGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "description": "Generate analysis"
+    "description": "Generates detailed trade and export analysis including top exporters, importer countries, and relevant trade data.",
+    "domain": "trade",
+    "entity_types": ["item", "location", "country"]
   }
 }

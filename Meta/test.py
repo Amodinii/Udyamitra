@@ -7,7 +7,8 @@ from utility.model import Metadata
 
 def test_pipeline():
     pipeline = IntentPipeline()
-    query = "Can you explain the benefits of the PMEGP scheme for women entrepreneurs in Maharashtra?"
+    #query = "Does Middle East import capacitors from India?"
+    query = "Which are the Top Countries Importing Capacitors from India?"
 
     metadata: Metadata = pipeline.run(query)
     print(metadata)
