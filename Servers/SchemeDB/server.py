@@ -39,6 +39,13 @@ vector_stores = {
         namespace=os.getenv("ASTRA_DB_KEYSPACE"),
         api_endpoint=ASTRA_DB_ENDPOINT,
         token=ASTRA_DB_TOKEN,
+    ),
+    "Export_Chunks": AstraDBVectorStore(
+        embedding=embeddings,
+        collection_name="Export_Chunks", 
+        namespace=os.getenv("ASTRA_DB_KEYSPACE"),
+        api_endpoint=ASTRA_DB_ENDPOINT,
+        token=ASTRA_DB_TOKEN,
     )
 }
 logger.info("Retriever vector stores ready.")
@@ -47,7 +54,7 @@ COLLECTION_MAP = {
     "InsightGenerator": "Investor_policies",
     "SchemeExplainer": "Scheme_chunks",
     "EligibilityChecker": "Scheme_chunks",
-    "AnalysisGenerator": "exp_scheme_chunks"
+    "AnalysisGenerator": "Export_Chunks"
 }
 
 mcp = FastMCP("SchemeDB", stateless_http=True)
