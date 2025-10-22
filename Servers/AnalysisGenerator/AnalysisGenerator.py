@@ -255,56 +255,75 @@ class AnalysisGenerator:
                 markdown_table = self._to_markdown_table(data_table)
 
             # Step 5: Generate LLM Prompts
+            
+            # --- MODIFICATION: New, stronger system prompt ---
+            system_prompt = """
+            You are an expert 'Business Growth Advisor AI' for exporters.
+            Your goal is to provide specific, data-driven, and actionable advice in a clear JSON format.
+            You MUST analyze the provided data to answer the user's query.
+
+            - **Personality:** Professional, insightful, and direct.
+            - **Core Task:** Synthesize two types of data:
+                1.  **STRUCTURED DATA:** This is your primary source for facts, figures, rankings, and totals.
+                2.  **VECTOR CONTEXT:** This provides background information, related schemes, or qualitative context.
+            - **Rule:** NEVER invent data. If the data is insufficient, state that in the `detailed_explanation`.
+            - **JSON Output:** You MUST produce a single, valid JSON object with ONLY the requested keys.
+            """
+
             if intent == "table_required":
-                system_prompt = (
-                    "You are a 'Business Growth Advisor AI'. Produce a single JSON object. "
-                    "Use the provided structured data, markdown table, and vector context to generate a detailed textual analysis. "
-                    "DO NOT produce or modify a 'data_table' field."
-                )
-                # --- MODIFICATION: Added 'sources' to the output keys and 'AVAILABLE SOURCES' to the prompt ---
+                # --- MODIFICATION: Clearer prompt, 'sources' removed ---
                 user_prompt = f"""
-                Generate the textual parts of the analysis based on the user's query and the data provided.
-                USER QUERY: {user_query}
-                USER PROFILE: {json.dumps(user_profile, indent=2)}
+                Analyze the following data to answer the user's query.
                 
-                STRUCTURED DATA ANALYSIS (From 'export_import_data'): 
+                ## User Query
+                "{user_query}"
+
+                ## User Profile (for personalization)
+                {json.dumps(user_profile, indent=2)}
+
+                ## 1. Structured Data Analysis (Facts & Figures from 'export_import_data')
+                This data shows rankings and totals from trade records.
                 {json.dumps(analysis_results, indent=2)}
-                
-                MARKDOWN_TABLE (for your reference):
+
+                ## 2. Markdown Table (Visual of Structured Data)
                 {markdown_table}
 
-                VECTOR CONTEXT (From 'exp_scheme_chunks' for background info):
-                {vector_context if vector_context else "No vector context found."}
-                
-                AVAILABLE SOURCES:
-                {json.dumps(source_names)}
+                ## 3. Vector Context (Background Info from 'exp_scheme_chunks')
+                Use this for qualitative context or to mention related schemes.
+                {vector_context if vector_context else "No related vector context found."}
 
-                Output MUST be a single JSON object with the keys: insight_summary, detailed_explanation, data_summary, actionable_steps, sources.
-                The 'sources' field MUST be a list of strings, populated from the AVAILABLE SOURCES list.
+                ## Required JSON Output
+                Generate a single JSON object with these exact keys:
+                - "insight_summary": A concise, 1-2 sentence summary of the key finding that answers the query.
+                - "detailed_explanation": A paragraph explaining *what* this data means for the user (as an exporter). Use "you" and "your". Refer to specific data points from the Structured Analysis.
+                - "data_summary": A bulleted list of 2-3 key data points from the Structured Analysis that support your insight.
+                - "actionable_steps": A numbered list of 2-3 concrete next steps for the user.
                 """
             else: # direct_answer
-                system_prompt = (
-                    "You are a 'Business Growth Advisor AI'. Your goal is to directly answer the user's question. "
-                    "Base your answer on the STRUCTURED DATA ANALYSIS and use the VECTOR CONTEXT for background. "
-                    "Do not suggest presenting a table. Respond in a single JSON object."
-                )
-                # --- MODIFICATION: Added 'sources' to the output keys and 'AVAILABLE SOURCES' to the prompt ---
+                # --- MODIFICATION: Clearer prompt, 'sources' removed ---
                 user_prompt = f"""
-                Directly answer the user's question using the provided data.
-                USER QUERY: {user_query}
-                USER PROFILE: {json.dumps(user_profile, indent=2)}
+                Analyze the following data to directly answer the user's query.
+                
+                ## User Query
+                "{user_query}"
 
-                STRUCTURED DATA ANALYSIS (From 'export_import_data'): 
+                ## User Profile (for personalization)
+                {json.dumps(user_profile, indent=2)}
+
+                ## 1. Structured Data Analysis (Facts & Figures from 'export_import_data')
+                This data shows totals and counts from trade records.
                 {json.dumps(analysis_results, indent=2)}
 
-                VECTOR CONTEXT (From 'exp_scheme_chunks' for background info):
-                {vector_context if vector_context else "No vector context found."}
-                
-                AVAILABLE SOURCES:
-                {json.dumps(source_names)}
-                
-                Output MUST be a single JSON object with the keys: insight_summary, detailed_explanation, data_summary, actionable_steps, sources.
-                The 'sources' field MUST be a list of strings, populated from the AVAILABLE SOURCES list.
+                ## 2. Vector Context (Background Info from 'exp_scheme_chunks')
+                Use this for qualitative context or to mention related schemes.
+                {vector_context if vector_context else "No related vector context found."}
+
+                ## Required JSON Output
+                Generate a single JSON object with these exact keys:
+                - "insight_summary": A concise, 1-2 sentence summary that directly answers the user's (yes/no or factual) query.
+                - "detailed_explanation": A paragraph explaining *what* this data means for the user (as an exporter). Use "you" and "your". Refer to specific data points from the Structured Analysis.
+                - "data_summary": A bulleted list of 2-3 key data points from the Structured Analysis that support your answer.
+                - "actionable_steps": A numbered list of 2-3 concrete next steps for the user based on the answer.
                 """
 
             # Step 6: Call LLM
@@ -318,28 +337,24 @@ class AnalysisGenerator:
             # Step 7: Assemble Final Response
             if not textual_response or not isinstance(textual_response, dict):
                 # Fallback in case LLM fails
-                # --- MODIFICATION: Added 'sources' to the fallback dictionary ---
+                # --- MODIFICATION: Removed 'sources' from fallback ---
                 textual_response = {
                     "insight_summary": "Data analysis complete.",
                     "detailed_explanation": "The analysis has been performed on the structured data.",
                     "data_summary": [f"Analyzed {analysis_results.get('total_records_analyzed', 0)} structured records."],
-                    "actionable_steps": ["Review the generated data table for insights."],
-                    "sources": source_names
+                    "actionable_steps": ["Review the generated data table for insights."]
                 }
 
             textual_response["data_table"] = data_table
             
-            # --- REMOVED: No longer needed, LLM or fallback handles this ---
-            # textual_response["sources"] = source_names 
+            # --- THE FIX: Manually add the sources list ---
+            textual_response["sources"] = source_names
             
-            # Sanitize lists just in case
+            # Sanitize lists from LLM
             if "data_summary" in textual_response:
                 textual_response["data_summary"] = self._sanitize_llm_list_output(textual_response["data_summary"])
             if "actionable_steps" in textual_response:
                 textual_response["actionable_steps"] = self._sanitize_llm_list_output(textual_response["actionable_steps"])
-            # --- ADDED: Sanitizer for the 'sources' field ---
-            if "sources" in textual_response:
-                textual_response["sources"] = self._sanitize_llm_list_output(textual_response["sources"])
 
             return textual_response
 
