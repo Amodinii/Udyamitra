@@ -4,8 +4,6 @@ import argparse
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 from typing import Optional
-
-# This import is now async
 from .AnalysisGenerator import AnalysisGenerator
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
