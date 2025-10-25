@@ -15,13 +15,15 @@ from Exception.exception import UdayamitraException
 from Servers.SchemeExplainer.server import mcp as scheme_explainer_mcp
 from Servers.EligibilityChecker.server import mcp as eligibility_checker_mcp
 from Servers.SchemeDB.server import mcp as scheme_db_retriever_mcp
+from Servers.MoSPI.server import mcp as db_retriever_mcp
 from Servers.InvestorInsight.server import mcp as investor_insight_mcp
-from Servers.AnalysisGenerator.server import mcp as analysis_generator_mcp
+from Servers.Analyzer.server import mcp as analysis_generator_mcp
 
 ALL_MCP_SERVERS = {
     "/explain-scheme": scheme_explainer_mcp,
     "/check-eligibility": eligibility_checker_mcp,
     "/retrieve-scheme": scheme_db_retriever_mcp,
+    "/retrieve-data": db_retriever_mcp,
     "/generate-insight": investor_insight_mcp,
     "/generate-analysis": analysis_generator_mcp,
 }

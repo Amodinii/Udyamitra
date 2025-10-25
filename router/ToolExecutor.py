@@ -36,7 +36,7 @@ def safe_json_parse(raw_output: str) -> dict:
         pass
 
     cleaned = raw_output.replace("'", '"')
-    cleaned = re.sub(r",\s*([}\]])", r"\\1", cleaned)
+    cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned) 
 
     try:
         return json.loads(cleaned)
@@ -48,15 +48,14 @@ def safe_json_parse(raw_output: str) -> dict:
 def ensure_dict(obj):
     return obj if isinstance(obj, dict) else {"output_text": str(obj)}
 
-# -------------------- ADDED (generic passthrough helpers) --------------------
 def _model_known_fields(schema_class) -> set:
     """
     Return the set of top-level field names of the Pydantic model.
     Supports Pydantic v1 (__fields__) and v2 (model_fields).
     """
-    if hasattr(schema_class, "__fields__"):     # Pydantic v1
+    if hasattr(schema_class, "__fields__"):  # Pydantic v1
         return set(schema_class.__fields__.keys())
-    if hasattr(schema_class, "model_fields"):   # Pydantic v2
+    if hasattr(schema_class, "model_fields"):  # Pydantic v2
         return set(schema_class.model_fields.keys())
     return set()
 
@@ -66,7 +65,7 @@ def _collect_extras_for_context(task_input: Dict[str, Any], known: set) -> Dict[
     We route them to context_entities.
     """
     return {k: v for k, v in (task_input or {}).items() if k not in known}
-# ---------------------------------------------------------------------------
+
 
 class ToolExecutor:
     def __init__(self, conversation_state: Optional[Any] = None):
@@ -140,13 +139,11 @@ class ToolExecutor:
     @staticmethod
     def format_explanation(raw: str) -> str:
         cleaned = raw.strip()
-        if "\n" in cleaned:
-            cleaned = cleaned.replace("\n", "\n")
-        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-        cleaned = cleaned.replace("* ", "• ")
-        if not cleaned.lower().startswith("here's a simple explanation"):
-            cleaned = "Here's a simple explanation:\n\n" + cleaned
+        cleaned = re.sub(r"(\s*\n\s*){2,}", "\n\n", cleaned) 
+        cleaned = cleaned.replace("•", "-") # Standardize bullets
+        cleaned = cleaned.replace("* ", "- ") # Standardize bullets
         return cleaned
+    
 
     async def run_execution_plan(
         self,
@@ -156,7 +153,6 @@ class ToolExecutor:
     ) -> Union[str, Dict[str, Any]]:
         results: Dict[str, Any] = {}
 
-        # Sanitize metadata.entities
         if isinstance(metadata.entities.get("scheme"), list):
             metadata.entities["scheme"] = metadata.entities["scheme"][0]
 
@@ -180,25 +176,20 @@ class ToolExecutor:
                         state=self.conversation_state
                     )
 
-                    # === Generic passthrough: route unknown planner keys -> context_entities ===
                     try:
                         known = _model_known_fields(schema_class)
                         extras = _collect_extras_for_context(task.input, known)
 
-                        # Only merge if the target model actually has context_entities
                         if extras and ("context_entities" in known):
                             current_ctx = getattr(full_input, "context_entities", None) or {}
                             merged_ctx = {**current_ctx, **extras}
 
-                            # Update the pydantic instance with merged context
                             full_input = full_input.copy(update={"context_entities": merged_ctx})
 
-                            # Also expose to conversation state so downstream tools can reuse it
                             self.state_manager.update_context_entities(merged_ctx)
                     except Exception as _e:
                         logger.warning(f"[extras passthrough] skipped: {_e}")
-                    # === End passthrough ===
-
+                    
                     logger.info(f"Calling tool '{task.tool_name}' with input: {full_input}")
                     wrapped_input = {"schema_dict": full_input.model_dump()}
                     logger.info(f"Wrapped input for tool '{task.tool_name}': {wrapped_input}")
@@ -207,15 +198,26 @@ class ToolExecutor:
                     parsed = {}
                     if hasattr(response, "content") and response.content:
                         parsed = ensure_dict(safe_json_parse(response.content[0].text))
+                    
+                    system_prompt = '''You are an expert assistant that formats a tool's raw JSON output into a beautiful, user-friendly, and professional response using Markdown.
 
-                    system_prompt = '''You are a helpful assistant that explains the output of a tool to the user, in an easy, detailed explainable way. 
-Ensure you explain all the keys in the output. Dont summarize it, convert it to a simple explanation suitable for a user.
-- Make sure you mention the sources at the end of the explanation.
-- Do not provide any commentary (or preamble) before the explanation, just provide the explanation.
-- You can add the follow up questions too, based on the context, make the subheading for it.
-- If you have a JSON, do not explain what the keys mean, just focus on simplifying the "content" of the JSON.
+Your task is to convert the user's JSON output into a formatted explanation.
+
+RULES:
+1.  **Do NOT** add any preamble (e.g., "Here's the explanation..."). Start the response directly.
+2.  **Use Markdown:**
+    - Use `**bold**` for the `insight_summary` and treat it as a main heading or title.
+    - Present the `detailed_explanation` as a clean paragraph.
+    - Format `data_summary` as a **bulleted list** (using `- `).
+    - Format `actionable_steps` as a **numbered list** (using `1. `, `2. `, etc.).
+    - If `data_table` is present and not empty, format it as a Markdown table.
+3.  **Handle Lists:** If `data_summary` or `actionable_steps` are strings with newlines, split them into proper bullet/numbered points.
+4.  **Be Clean:** Do not "explain" the JSON keys. Just present the *content* of the keys in the requested format.
+5.  **Sources:** Always end the response with a "Sources: ..." line if the `sources` key is present and not empty.
+6.  **Follow-up Questions:** If you generate follow-up questions, give them a `### Follow-up Questions:` heading.
 '''
-                    user_message = f"""Here is the tool's response:\n\n{json.dumps(parsed, indent=2)}\n\nPlease convert this into a simple explanation suitable for a user."""
+
+                    user_message = f"""Here is the tool's response:\n\n{json.dumps(parsed, indent=2)}\n\nPlease convert this into a beautiful, formatted Markdown explanation."""
                     final_explanation = self.llm_client.run_chat(system_prompt, user_message)
 
                     if isinstance(final_explanation, str) and '\\n' in final_explanation:
