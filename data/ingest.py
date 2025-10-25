@@ -11,17 +11,17 @@ from langchain_core.documents import Document
 
 load_dotenv()
 
-PDF_DIR = "data/raw/pdfs/exp_pdfs"
+PDF_DIR = "data/raw/pdfs/new"
 #TXT_DIR = "data/raw/webpages"
-COLLECTION_NAME = "Export_Chunks"
+COLLECTION_NAME = "Mospi_data"
 
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 vectorstore = AstraDBVectorStore(
     embedding=embedding_model,
     collection_name=COLLECTION_NAME,
-    api_endpoint=os.getenv("ASTRA_DB_ENDPOINT"),
-    token=os.getenv("ASTRA_DB_TOKEN"),
+    api_endpoint=os.getenv("ASTRA_DB_ENDPOINT_2"),
+    token=os.getenv("ASTRA_DB_TOKEN_2"),
 )
 
 def extract_text_from_pdf(filepath):
@@ -88,6 +88,7 @@ def ingest_all():
         metadata = {
             "id": doc_id,
             "source_files": list(files.values()),
+            "source": "MoSPI Dataset",
             "scheme_name": doc_id.replace("_", " ").title()
         }
 

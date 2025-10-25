@@ -27,23 +27,18 @@ async def generate_analysis(schema_dict: dict) -> dict:
 
         user_query = schema_dict.get("user_query", "Provide a general analysis of the export data.")
         user_profile_data = schema_dict.get("user_profile", {})
-        # retrieved_documents is no longer needed from the input
         entities = schema_dict.get("entities", {})
 
-        # --- MODIFICATION: Must use 'await' now ---
         result = await analysis_generator.generate_structured_insight(
             user_query=user_query,
             user_profile=user_profile_data,
             entities=entities
         )
-        # --- END MODIFICATION ---
         
         return result
 
     except Exception as e:
-        # Log the full traceback for debugging
         logger.error(f"An unexpected error occurred in AnalysisGenerator logic: {e}", exc_info=True)
-        # Raise UdayamitraException with the specific error
         raise UdayamitraException(f"Failed to generate analysis: {str(e)}", sys)
 
 
