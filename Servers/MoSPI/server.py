@@ -10,8 +10,8 @@ from utility.register_tools import generate_tool_registry_entry, register_tool
 from utility.model import RetrievedDoc, RetrieverOutput
 
 load_dotenv()
-ASTRA_DB_ENDPOINT = os.getenv("ASTRA_DB_ENDPOINT")
-ASTRA_DB_TOKEN    = os.getenv("ASTRA_DB_TOKEN")
+ASTRA_DB_ENDPOINT = os.getenv("ASTRA_DB_ENDPOINT_2")
+ASTRA_DB_TOKEN    = os.getenv("ASTRA_DB_TOKEN_2")
 if not ASTRA_DB_ENDPOINT or not ASTRA_DB_TOKEN:
     raise RuntimeError("ASTRA_DB_ENDPOINT and ASTRA_DB_TOKEN must be set")
 
@@ -19,30 +19,9 @@ logger.info("Initializing embeddings and vector stores for Retriever…")
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 vector_stores = {
-    "Investor_policies": AstraDBVectorStore(
+    "Mospi_data": AstraDBVectorStore(
         embedding=embeddings,
-        collection_name="Investor_policies", 
-        namespace=os.getenv("ASTRA_DB_KEYSPACE"),
-        api_endpoint=ASTRA_DB_ENDPOINT,
-        token=ASTRA_DB_TOKEN,
-    ),
-    "Scheme_chunks": AstraDBVectorStore(
-        embedding=embeddings,
-        collection_name="scheme_chunks", # Collection for SchemeExplainer
-        namespace=os.getenv("ASTRA_DB_KEYSPACE"),
-        api_endpoint=ASTRA_DB_ENDPOINT,
-        token=ASTRA_DB_TOKEN,
-    ),
-    "Schemes_metadata": AstraDBVectorStore(
-        embedding=embeddings,
-        collection_name="Schemes_metadata", # Kept for other potential uses
-        namespace=os.getenv("ASTRA_DB_KEYSPACE"),
-        api_endpoint=ASTRA_DB_ENDPOINT,
-        token=ASTRA_DB_TOKEN,
-    ),
-    "Export_Chunks": AstraDBVectorStore(
-        embedding=embeddings,
-        collection_name="Export_Chunks", 
+        collection_name="Mospi_data",
         namespace=os.getenv("ASTRA_DB_KEYSPACE"),
         api_endpoint=ASTRA_DB_ENDPOINT,
         token=ASTRA_DB_TOKEN,
@@ -51,13 +30,10 @@ vector_stores = {
 logger.info("Retriever vector stores ready.")
 
 COLLECTION_MAP = {
-    "InsightGenerator": "Investor_policies",
-    "SchemeExplainer": "Scheme_chunks",
-    "EligibilityChecker": "Scheme_chunks",
-    "AnalysisGenerator": "Export_Chunks"
+    "Analyzer": "Mospi_data"
 }
 
-mcp = FastMCP("SchemeDB", stateless_http=True)
+mcp = FastMCP("MoSPI", stateless_http=True)
 
 @mcp.tool()
 async def retrieve_documents(query: str, caller_tool: str, top_k: int = 5) -> RetrieverOutput:

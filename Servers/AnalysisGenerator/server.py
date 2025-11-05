@@ -4,7 +4,6 @@ import argparse
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 from typing import Optional
-
 from .AnalysisGenerator import AnalysisGenerator
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
@@ -28,23 +27,19 @@ async def generate_analysis(schema_dict: dict) -> dict:
 
         user_query = schema_dict.get("user_query", "Provide a general analysis of the export data.")
         user_profile_data = schema_dict.get("user_profile", {})
-        entities_data = schema_dict.get("entities", {})
-        
-        result = analysis_generator.generate_structured_insight(
+        entities = schema_dict.get("entities", {})
+
+        result = await analysis_generator.generate_structured_insight(
             user_query=user_query,
             user_profile=user_profile_data,
-            entities=entities_data
+            entities=entities
         )
         
         return result
 
     except Exception as e:
-        # --- FINAL DEBUGGING MODIFICATION ---
-        # Log the full, detailed traceback of the actual error
         logger.error(f"An unexpected error occurred in AnalysisGenerator logic: {e}", exc_info=True)
-        # Pass the specific error message forward for better debugging
         raise UdayamitraException(f"Failed to generate analysis: {str(e)}", sys)
-        # --- END MODIFICATION ---
 
 
 if __name__ == "__main__":
@@ -59,4 +54,3 @@ if __name__ == "__main__":
     register_tool(tool_info)
     
     mcp.run(transport='streamable-http')
-
