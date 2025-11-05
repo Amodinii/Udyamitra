@@ -8,7 +8,6 @@ on:
 env:
   GHCR_REPO: data-g-i-v-e/udyamitra  # lowercase GHCR repo name
   RENDER_SERVICE_ID: srv-d451j2e3jp1c73ehmp5g
-  RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }} 
 
 jobs:
   build-push-deploy:
@@ -57,7 +56,17 @@ jobs:
 
       # Trigger Render deploy
       - name: Trigger Render Deployment
+        continue-on-error: true
         run: |
-          curl -X POST "https://api.render.com/deploy/${{ env.RENDER_SERVICE_ID }}" \
-          -H "Accept: application/json" \
-          -H "Authorization: Bearer ${{ env.RENDER_API_KEY }}"
+          echo "Triggering Render deployment..."
+          if ! curl -X POST "https://api.render.com/deploy/${{ env.RENDER_SERVICE_ID }}" \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"; then
+            echo "Render deployment failed!"
+            echo "Docker images are available on GHCR for manual deployment:"
+            echo "Backend: ghcr.io/${{ env.GHCR_REPO }}/backend:latest"
+            echo "Backend versioned: ghcr.io/${{ env.GHCR_REPO }}/backend:${{ github.run_number }}"
+            echo "MCP: ghcr.io/${{ env.GHCR_REPO }}/mcp:latest"
+            echo "MCP versioned: ghcr.io/${{ env.GHCR_REPO }}/mcp:${{ github.run_number }}"
+            exit 1
+          fi
