@@ -6,13 +6,15 @@ import json
 from .pipeline import Pipeline
 from utility.model import ConversationState, Message
 from utility.StateManager import StateManager
+import nest_asyncio
+nest_asyncio.apply()
 
 app = FastAPI(title="Pipeline API")
 
 # Allow CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://udyamitra-frontend.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

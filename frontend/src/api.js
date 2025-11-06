@@ -1,5 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
-
+console.log(`API BASE URL: ${BASE_URL}`);
 // Start the pipeline
 async function startPipeline(userQuery) {
   console.log(`userQuery: ${userQuery}`);

@@ -2,28 +2,26 @@ import sys
 import os
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
-
 from astrapy import DataAPIClient
 from astrapy.constants import VectorMetric
 from astrapy.info import CollectionDefinition, CollectionVectorOptions
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
-
+from utility.Embedder import HFAPIEmbeddings
+import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 load_dotenv()
 
 
 class AstraDB:
     DEFAULT_DIMENSION = 384
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
     def __init__(self, collection_name: str, dimension: int = DEFAULT_DIMENSION):
         try:
-            logger.info("Initializing AstraDB client and embedding model...")
+            logger.info("Initializing AstraDB client and HF API embedding wrapper...")
             self.client = DataAPIClient()
             self.database = self.client.get_database(
                 api_endpoint=os.getenv("ASTRA_DB_ENDPOINT"),
@@ -31,10 +29,10 @@ class AstraDB:
             )
             self.collection_name = collection_name
             self.dimension = dimension
-            self.model = SentenceTransformer(self.EMBEDDING_MODEL)
-            logger.info(f"Using local embedding model: {self.EMBEDDING_MODEL} ({self.dimension}D)")
+            self.embedding_model = HFAPIEmbeddings()
+            logger.info(f"Using HFAPIEmbeddings ({self.dimension}D) via {os.getenv('EMBEDDING_API_URL')}")
         except Exception as e:
-            logger.error(f"Failed to initialize AstraDB client or model: {e}")
+            logger.error(f"Failed to initialize AstraDB client or embedding API: {e}")
             raise UdayamitraException("Failed to initialize AstraDB", sys)
 
     def create_collection(self):
@@ -80,22 +78,23 @@ class AstraDB:
 
     def vectorize_chunks(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         try:
-            logger.info(f"Vectorizing {len(chunks)} text chunks...")
+            logger.info(f"Vectorizing {len(chunks)} text chunks via HF API...")
             texts = [chunk["text"] for chunk in chunks]
-            embeddings = self.model.encode(texts, convert_to_numpy=True)
+            # Call HF API for embeddings
+            embeddings = asyncio.run(self.embedding_model.embed_documents(texts))
             vectorized_docs = []
             for i, chunk in enumerate(chunks):
                 doc = {
                     "file_name": chunk["file_name"],
                     "metadata": chunk.get("metadata", {}),
                     "text": chunk["text"],
-                    "$vector": embeddings[i].tolist()
+                    "$vector": embeddings[i]
                 }
                 vectorized_docs.append(doc)
             logger.info(f"Generated {len(vectorized_docs)} embeddings ({self.dimension}D each).")
             return vectorized_docs
         except Exception as e:
-            logger.error(f"Failed to vectorize chunks: {e}")
+            logger.error(f"Failed to vectorize chunks via HF API: {e}")
             raise UdayamitraException("Failed to vectorize chunks", sys)
 
     def push_to_collection(self, data: List[Dict[str, Any]]):
