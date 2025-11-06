@@ -7,7 +7,7 @@
       "list_benefits",
       "understand_scheme"
     ],
-    "endpoint": "http://127.0.0.1:10000/explain-scheme/mcp/",
+    "endpoint": "http://localhost:10000/explain-scheme/mcp/",
     "input_schema": "SchemeMetadata",
     "output_schema": "SchemeExplanationResponse",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
@@ -21,7 +21,7 @@
       "lookup_scheme",
       "fetch_scheme_data"
     ],
-    "endpoint": "http://127.0.0.1:10000/retrieve-scheme/mcp/",
+    "endpoint": "http://localhost:10000/retrieve-scheme/mcp/",
     "input_schema": "RetrievedDoc",
     "output_schema": "RetrieverOutput",
     "model": "AstraDB + Groq Embedding",
@@ -35,7 +35,7 @@
       "can_apply",
       "verify_eligibility"
     ],
-    "endpoint": "http://127.0.0.1:10000/check-eligibility/mcp/",
+    "endpoint": "http://localhost:10000/check-eligibility/mcp/",
     "input_schema": "EligibilityCheckRequest",
     "output_schema": "EligibilityCheckResponse",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
@@ -50,7 +50,7 @@
       "compare_benefits",
       "provide_guidance"
     ],
-    "endpoint": "http://127.0.0.1:10000/generate-insight/mcp/",
+    "endpoint": "http://localhost:10000/generate-insight/mcp/",
     "input_schema": "InsightGeneratorInput",
     "output_schema": "InsightGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
@@ -63,7 +63,7 @@
       "lookup_data",
       "fetch_data"
     ],
-    "endpoint": "http://127.0.0.1:10000/retrieve-data/mcp/",
+    "endpoint": "http://localhost:10000/retrieve-data/mcp/",
     "input_schema": "RetrievedDoc",
     "output_schema": "RetrieverOutput",
     "model": "AstraDB + Groq Embedding",
@@ -84,7 +84,7 @@
       "check_export_markets",
       "check_import_status"
     ],
-    "endpoint": "http://127.0.0.1:10000/generate-analysis/mcp/",
+    "endpoint": "http://localhost:10000/generate-analysis/mcp/",
     "input_schema": "InsightGeneratorInput",
     "output_schema": "AnalysisGeneratorOutput",
     "model": "meta-llama/llama-4-maverick-17b-128e-instruct",

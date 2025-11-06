@@ -1,0 +1,53 @@
+name: Build, Push Full-App Docker Image & Deploy to Render
+
+on:
+  push:
+    branches:
+      - prod
+
+env:
+  GHCR_REPO: data-g-i-v-e/udyamitra
+  RENDER_SERVICE_ID: srv-d451j2e3jp1c73ehmp5g
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: nottpande
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build & Push Full-App Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./DockerFile
+          push: true
+          tags: |
+            ghcr.io/${{ env.GHCR_REPO }}/udyamitra-full:latest
+            ghcr.io/${{ env.GHCR_REPO }}/udyamitra-full:${{ github.run_number }}
+
+      - name: Trigger Render Deployment
+        continue-on-error: true
+        run: |
+          echo "Triggering Render deployment..."
+          if ! curl -X POST "https://api.render.com/deploy/${{ env.RENDER_SERVICE_ID }}" \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"; then
+            echo "Render deployment failed!"
+            echo "Docker image is available on GHCR for manual deployment:"
+            echo "Image: ghcr.io/${{ env.GHCR_REPO }}/udyamitra-full:latest"
+            echo "Versioned: ghcr.io/${{ env.GHCR_REPO }}/udyamitra-full:${{ github.run_number }}"
+            exit 1
+          fi
+            echo "Render deployment triggered successfully."
