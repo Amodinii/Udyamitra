@@ -3,19 +3,20 @@ import json
 import fitz
 from dotenv import load_dotenv
 from Logging.logger import logger
-from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
+from utility.Embedder import HFAPIEmbeddings 
+import nest_asyncio
+nest_asyncio.apply()
+
 
 load_dotenv()
 
 PDF_DIR = "data/raw/pdfs/new"
-#TXT_DIR = "data/raw/webpages"
+# TXT_DIR = "data/raw/webpages"
 COLLECTION_NAME = "Mospi_data"
-
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding_model = HFAPIEmbeddings()
 
 vectorstore = AstraDBVectorStore(
     embedding=embedding_model,
@@ -23,6 +24,7 @@ vectorstore = AstraDBVectorStore(
     api_endpoint=os.getenv("ASTRA_DB_ENDPOINT_2"),
     token=os.getenv("ASTRA_DB_TOKEN_2"),
 )
+
 
 def extract_text_from_pdf(filepath):
     try:
@@ -32,6 +34,7 @@ def extract_text_from_pdf(filepath):
         logger.error(f"Error reading {filepath}: {e}")
         return ""
 
+
 def extract_text_from_txt(filepath):
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -39,6 +42,7 @@ def extract_text_from_txt(filepath):
     except Exception as e:
         logger.error(f"Error reading {filepath}: {e}")
         return ""
+
 
 def chunk_text(text, metadata):
     splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
@@ -56,6 +60,7 @@ def chunk_text(text, metadata):
         documents.append(doc)
     return documents
 
+
 def ingest_all():
     groups = {}
 
@@ -66,10 +71,11 @@ def ingest_all():
                 pdf_path = os.path.join(root, fname)
                 groups.setdefault(key, {}).setdefault("pdfs", []).append(pdf_path)
 
-    #for fname in os.listdir(TXT_DIR):
-        #if fname.endswith(".txt"):
-            #key = os.path.splitext(fname)[0]
-            #groups.setdefault(key, {})["txt"] = os.path.join(TXT_DIR, fname)
+    # Optional TXT handling
+    # for fname in os.listdir(TXT_DIR):
+    #     if fname.endswith(".txt"):
+    #         key = os.path.splitext(fname)[0]
+    #         groups.setdefault(key, {})["txt"] = os.path.join(TXT_DIR, fname)
 
     for doc_id, files in groups.items():
         logger.info(f"\nProcessing document group: {doc_id}")
@@ -93,11 +99,15 @@ def ingest_all():
         }
 
         documents = chunk_text(text, metadata)
-        try:
-            vectorstore.add_documents(documents)
-            logger.info(f"Inserted {len(documents)} chunks for {doc_id}")
-        except Exception as e:
-            logger.error(f"Failed to insert chunks for {doc_id}: {e}")
+
+        if documents:
+            try:
+                embeddings = embedding_model.embed_documents_sync([doc.page_content for doc in documents])
+                vectorstore.add_documents(documents, embeddings=embeddings)
+                logger.info(f"Inserted {len(documents)} chunks for {doc_id}")
+            except Exception as e:
+                logger.error(f"Failed to insert chunks for {doc_id}: {e}")
+
 
 if __name__ == "__main__":
     ingest_all()

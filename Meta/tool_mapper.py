@@ -4,14 +4,18 @@ from Logging.logger import logger
 from Exception.exception import UdayamitraException
 from typing import Dict
 import sys
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from utility.Embedder import HFAPIEmbeddings  # <-- HF API wrapper
+import asyncio
+import nest_asyncio
+nest_asyncio.apply()
+
 
 class ToolMapper:
-    def __init__(self, description_weight: float = 0.7, intent_weight: float = 0.3, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, description_weight: float = 0.7, intent_weight: float = 0.3):
         """
-        Initializes the ToolMapper and precomputes embeddings for all tools.
+        Initializes the ToolMapper and precomputes embeddings for all tools using HF API.
         """
         try:
             logger.info("Initializing ToolMapper")
@@ -19,17 +23,22 @@ class ToolMapper:
             self.description_weight = description_weight
             self.intent_weight = intent_weight
 
-            # Load the sentence transformer model
-            self.model = SentenceTransformer(model_name)
+            # Use HF API embeddings instead of local model
+            self.embedding_model = HFAPIEmbeddings()
 
             # Precompute embeddings for tool descriptions and intents
             self.tool_embeddings: Dict[str, Dict[str, np.ndarray]] = {}
+            loop = asyncio.get_event_loop()
             for tool_name, entry in self.tool_registry.items():
-                desc_emb = self.model.encode(entry.description, convert_to_numpy=True)
-                intent_emb = self.model.encode(" ".join(entry.intents), convert_to_numpy=True)
+                desc_emb, intent_emb = loop.run_until_complete(
+                    asyncio.gather(
+                        self.embedding_model.embed_documents([entry.description]),
+                        self.embedding_model.embed_documents([" ".join(entry.intents)])
+                    )
+                )
                 self.tool_embeddings[tool_name] = {
-                    "description": desc_emb,
-                    "intents": intent_emb
+                    "description": np.array(desc_emb[0]),
+                    "intents": np.array(intent_emb[0])
                 }
 
         except Exception as e:
@@ -46,11 +55,16 @@ class ToolMapper:
                 logger.warning("No intents or expanded query found in metadata; skipping tool mapping.")
                 return metadata
 
-            # Embed the expanded query
-            query_emb = self.model.encode(metadata.query, convert_to_numpy=True)
-            # Embed query intents as a single text
-            intents_text = " ".join(metadata.intents)
-            intents_emb = self.model.encode(intents_text, convert_to_numpy=True)
+            # Embed query and intents using HF API (synchronously via async wrapper)
+            loop = asyncio.get_event_loop()
+            query_emb, intents_emb = loop.run_until_complete(
+                asyncio.gather(
+                    self.embedding_model.embed_documents([metadata.query]),
+                    self.embedding_model.embed_documents([" ".join(metadata.intents)])
+                )
+            )
+            query_emb = np.array(query_emb[0])
+            intents_emb = np.array(intents_emb[0])
 
             tool_scores = {}
 
