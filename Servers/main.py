@@ -100,6 +100,6 @@ for route, mcp in ALL_MCP_SERVERS.items():
     server.mount(route, mcp.streamable_http_app())
 
 if __name__ == "__main__":
-    PORT = int(os.getenv("PORT", os.getenv("SERVER_PORT", 8000)))
+    PORT = int(os.getenv("PORT", 10000))
     logger.info(f"Starting Udayamitra MCP Server on port {PORT}")
     uvicorn.run(server, host="0.0.0.0", port=PORT, log_level="debug")
