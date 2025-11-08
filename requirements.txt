@@ -4,7 +4,6 @@ astrapy
 langchain 
 langchain-community
 playwright
-sentence-transformers
 requests
 beautifulsoup4
 requests
@@ -17,7 +16,9 @@ fastapi
 uvicorn
 pytest
 langchain-astradb
-langchain-huggingface
 cassandra-driver
 gevent
 json5
+nest_asyncio
+scikit-learn
+python-dotenv

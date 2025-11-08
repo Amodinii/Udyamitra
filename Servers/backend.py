@@ -6,13 +6,15 @@ import json
 from .pipeline import Pipeline
 from utility.model import ConversationState, Message
 from utility.StateManager import StateManager
+import nest_asyncio
+nest_asyncio.apply()
 
 app = FastAPI(title="Pipeline API")
 
 # Allow CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://udyamitra-frontend.vercel.app", "https://udyamitra-mcps.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,6 +30,10 @@ class StartRequest(BaseModel):
 
 class ContinueRequest(BaseModel):
     user_query: str
+
+@app.get("/")
+async def root():
+    return {"message": "Pipeline API for backend is running."}
 
 # POST /start (starts a new conversation)
 @app.post("/start")

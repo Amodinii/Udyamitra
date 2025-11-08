@@ -7,6 +7,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from contextlib import AsyncExitStack
+import nest_asyncio
+nest_asyncio.apply()
 
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
@@ -50,7 +52,9 @@ try:
         allow_origins=[
             "http://localhost:6274", "http://127.0.0.1:6274",
             "http://localhost:6277", "http://127.0.0.1:6277",
-            "http://localhost:3000", "http://127.0.0.1:3000"
+            "http://localhost:3000", "http://127.0.0.1:3000",
+            "https://udyamitra-frontend.vercel.app",
+            "https://udyamitra-backend.onrender.com"
         ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

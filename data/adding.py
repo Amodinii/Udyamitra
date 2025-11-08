@@ -1,22 +1,21 @@
 import os
 import json
-import fitz 
-import sys 
+import fitz
+import sys
 from dotenv import load_dotenv
 from Logging.logger import logger
-from sentence_transformers import SentenceTransformer 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
+from utility.Embedder import HFAPIEmbeddings
+import nest_asyncio
+nest_asyncio.apply()
 
 load_dotenv()
 
-PDF_DIR = "data/raw/pdfs/new" 
-#TXT_DIR = "data/raw/webpages" 
-COLLECTION_NAME = "Export_Chunks" 
-
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+PDF_DIR = "data/raw/pdfs/new"
+COLLECTION_NAME = "Export_Chunks"
+embedding_model = HFAPIEmbeddings()
 
 vectorstore = AstraDBVectorStore(
     embedding=embedding_model,
@@ -25,25 +24,27 @@ vectorstore = AstraDBVectorStore(
     token=os.getenv("ASTRA_DB_TOKEN"),
 )
 
+
 def extract_text_from_pdf(filepath):
     """Extracts text from a PDF file using fitz (PyMuPDF)."""
     try:
         if not hasattr(fitz, 'open'):
-             logger.error("fitz module does not have 'open' attribute. Is PyMuPDF installed correctly?")
-             raise ImportError("fitz.open not found. Check PyMuPDF installation.")
+            logger.error("fitz module does not have 'open' attribute. Is PyMuPDF installed correctly?")
+            raise ImportError("fitz.open not found. Check PyMuPDF installation.")
 
         logger.debug(f"Loading PDF with fitz: {filepath}")
-        doc = fitz.open(filepath) 
+        doc = fitz.open(filepath)
         full_text = "\n".join(page.get_text() for page in doc)
-        doc.close() 
+        doc.close()
         logger.debug(f"Extracted {len(full_text)} characters from {filepath}")
         return full_text
-    except ImportError as ie: 
-         logger.error(f"ImportError reading {filepath}: {ie}")
-         return "" 
+    except ImportError as ie:
+        logger.error(f"ImportError reading {filepath}: {ie}")
+        return ""
     except Exception as e:
         logger.error(f"Error reading {filepath} with fitz: {e}", exc_info=True)
         return ""
+
 
 def extract_text_from_txt(filepath):
     try:
@@ -52,6 +53,7 @@ def extract_text_from_txt(filepath):
     except Exception as e:
         logger.error(f"Error reading {filepath}: {e}")
         return ""
+
 
 def chunk_text(text, metadata):
     """Chunks text and returns LangChain Document objects with metadata."""
@@ -68,6 +70,7 @@ def chunk_text(text, metadata):
         )
         documents.append(doc)
     return documents
+
 
 def ingest_all():
     """Finds PDFs in PDF_DIR, chunks them, and adds them to the vector store."""
@@ -96,22 +99,23 @@ def ingest_all():
         logger.info(f"\nProcessing document: {doc_id}")
         text = ""
 
-        pdf_path = files["pdfs"][0] 
+        pdf_path = files["pdfs"][0]
         pdf_content = extract_text_from_pdf(pdf_path)
         if pdf_content:
-            text += pdf_content 
+            text += pdf_content
             logger.info(f"  - Extracted text from PDF: {pdf_path}")
         else:
             logger.warning(f"  - Failed to extract text from PDF: {pdf_path}. Skipping.")
-            continue 
+            continue
+
         if not text.strip():
             logger.warning(f"No text extracted for document '{doc_id}', skipping.")
             continue
 
         metadata = {
             "id": doc_id,
-            "source_file": os.path.abspath(pdf_path), 
-            "original_filename": os.path.basename(pdf_path) 
+            "source_file": os.path.abspath(pdf_path),
+            "original_filename": os.path.basename(pdf_path)
         }
 
         documents = chunk_text(text, metadata)
@@ -119,8 +123,8 @@ def ingest_all():
 
         if documents:
             try:
-                # Add documents TO THE EXISTING COLLECTION
-                vectorstore.add_documents(documents)
+                embeddings = embedding_model.embed_documents_sync([doc.page_content for doc in documents])
+                vectorstore.add_documents(documents, embeddings=embeddings)
                 logger.info(f"  - Successfully embedded and ADDED {len(documents)} chunks for '{doc_id}' to '{COLLECTION_NAME}'.")
                 processed_chunks_count += len(documents)
             except Exception as e:
@@ -133,6 +137,5 @@ def ingest_all():
 
 if __name__ == "__main__":
     logger.info(f"Starting ingestion process to ADD documents to collection '{COLLECTION_NAME}'...")
-    logger.info(f"Proceeding with ingestion into existing collection '{COLLECTION_NAME}'...")
-    ingest_all() 
+    ingest_all()
     logger.info("Ingestion process complete.")
