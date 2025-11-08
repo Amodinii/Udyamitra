@@ -20,3 +20,4 @@ langchain-huggingface
 cassandra-driver
 gevent
 json5
+python-dotenv
