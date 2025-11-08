@@ -20,6 +20,7 @@ jobs:
         id: trigger
         run: |
           echo "Triggering Backend deployment..."
+          
           DEPLOY_ID=$(curl -s -X POST \
             -H "Accept: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
@@ -27,17 +28,26 @@ jobs:
             --data '{"clearCache":"do_not_clear"}' \
             https://api.render.com/v1/services/${{ env.BACKEND_SERVICE_ID }}/deploys \
             | jq -r '.id')
+          
+          if [ -z "$DEPLOY_ID" ] || [ "$DEPLOY_ID" = "null" ]; then
+            echo "Failed to get deploy ID from Render API response"
+            exit 1
+          fi
+          
           echo "Deploy ID: $DEPLOY_ID"
           echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for Backend Deploy to Complete
         run: |
           echo "Waiting for backend deploy to finish..."
+          
           for i in {1..40}; do
             STATUS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
               https://api.render.com/v1/deploys/${{ steps.trigger.outputs.deploy_id }} \
               | jq -r '.status')
+            
             echo "Current deploy status: $STATUS"
+            
             if [ "$STATUS" = "live" ]; then
               echo "Backend deploy is live!"
               exit 0
@@ -45,7 +55,9 @@ jobs:
               echo "Backend deploy failed!"
               exit 1
             fi
+            
             sleep 30
           done
+          
           echo "Backend deploy did not finish within expected time"
           exit 1
