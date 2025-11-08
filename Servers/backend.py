@@ -14,7 +14,7 @@ app = FastAPI(title="Pipeline API")
 # Allow CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://udyamitra-frontend.vercel.app/", "https://udyamitra-mcps.onrender.com"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://udyamitra-frontend.vercel.app", "https://udyamitra-mcps.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
