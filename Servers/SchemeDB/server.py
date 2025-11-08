@@ -4,11 +4,10 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from Logging.logger import logger
 from Exception.exception import UdayamitraException
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_astradb import AstraDBVectorStore
 from utility.register_tools import generate_tool_registry_entry, register_tool
 from utility.model import RetrievedDoc, RetrieverOutput
-
+from utility.Embedder import RemoteHFEmbeddings
 load_dotenv()
 ASTRA_DB_ENDPOINT = os.getenv("ASTRA_DB_ENDPOINT")
 ASTRA_DB_TOKEN    = os.getenv("ASTRA_DB_TOKEN")
@@ -16,7 +15,7 @@ if not ASTRA_DB_ENDPOINT or not ASTRA_DB_TOKEN:
     raise RuntimeError("ASTRA_DB_ENDPOINT and ASTRA_DB_TOKEN must be set")
 
 logger.info("Initializing embeddings and vector stores for Retriever…")
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embeddings = RemoteHFEmbeddings()
 
 vector_stores = {
     "Investor_policies": AstraDBVectorStore(
