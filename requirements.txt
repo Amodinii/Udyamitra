@@ -16,10 +16,9 @@ fastapi
 uvicorn
 pytest
 langchain-astradb
-langchain-huggingface
 cassandra-driver
 gevent
 json5
 nest_asyncio
-sentence-transformers
 scikit-learn
+python-dotenv
