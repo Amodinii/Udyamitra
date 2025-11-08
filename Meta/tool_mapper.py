@@ -6,11 +6,10 @@ from typing import Dict
 import sys
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from utility.Embedder import HFAPIEmbeddings  # <-- HF API wrapper
+from utility.Embedder import HFAPIEmbeddings
 import asyncio
 import nest_asyncio
 nest_asyncio.apply()
-
 
 class ToolMapper:
     def __init__(self, description_weight: float = 0.7, intent_weight: float = 0.3):
